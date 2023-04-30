@@ -126,7 +126,7 @@ public struct CustomHashable: ConformanceMacro, MemberMacro {
         })
 
         var hashIntoImplementation: String =  """
-            \(scope)\(hasSuperclass ? "override " : "")func haseh(into hasher: inout Hasher) {
+            \(scope)\(hasSuperclass ? "override " : "")func hash(into hasher: inout Hasher) {
         """
 
         if hasSuperclass {
