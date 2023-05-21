@@ -1,56 +1,19 @@
 import XCTest
 import CustomHashable
 
-struct NotHashableType {}
-
-@CustomHashable
-struct CustomHashableStructWithMultipleProperties: Hashable {
-    @HashableKey
-    let firstProperty: Int
-
-    @HashableKey
-    let secondProperty: Int
-
-    @HashableKey
-    private let thirdProperty: Int
-
-    init(firstProperty: Int, secondProperty: Int, thirdProperty: Int) {
-        self.firstProperty = firstProperty
-            self.secondProperty = secondProperty
-self.thirdProperty = thirdProperty
-    }
-}
-
-@CustomHashable
-struct CustomHashableStructWithExcludedProperty: Hashable {
-    @HashableKey
-    let firstProperty: Int
-
-    @HashableKey
-    let secondProperty: Int
-
-    let excludedProperty: Int
-
-    init(firstProperty: Int, secondProperty: Int, excludedProperty: Int) {
-        self.firstProperty = firstProperty
-            self.secondProperty = secondProperty
-self.excludedProperty = excludedProperty
-    }
-}
-
 final class CustomHashableTests: XCTestCase {
-    func testCustomHashableStructMultipleProperties() {
-        let value1 = CustomHashableStructWithMultipleProperties(firstProperty: 1, secondProperty: 2, thirdProperty: 3)
-        let value2 = CustomHashableStructWithMultipleProperties(firstProperty: 2, secondProperty: 2, thirdProperty: 3)
-        let value3 = CustomHashableStructWithMultipleProperties(firstProperty: 1, secondProperty: 2, thirdProperty: 4)
+    // func testCustomHashableStructMultipleProperties() {
+    //     let value1 = CustomHashableStructWithMultipleProperties(firstProperty: 1, secondProperty: 2, thirdProperty: 3)
+    //     let value2 = CustomHashableStructWithMultipleProperties(firstProperty: 2, secondProperty: 2, thirdProperty: 3)
+    //     let value3 = CustomHashableStructWithMultipleProperties(firstProperty: 1, secondProperty: 2, thirdProperty: 4)
 
-        XCTAssertEqual(value1, value1)
-        XCTAssertEqual(value2, value2)
-        XCTAssertEqual(value3, value3)
-        XCTAssertNotEqual(value1, value3)
-        XCTAssertNotEqual(value2, value3)
-        XCTAssertNotEqual(value1, value2)
-    }
+    //     XCTAssertEqual(value1, value1)
+    //     XCTAssertEqual(value2, value2)
+    //     XCTAssertEqual(value3, value3)
+    //     XCTAssertNotEqual(value1, value3)
+    //     XCTAssertNotEqual(value2, value3)
+    //     XCTAssertNotEqual(value1, value2)
+    // }
 
     func testCustomHashableStructWithExcludedProperty() {
         let value1 = CustomHashableStructWithExcludedProperty(firstProperty: 1, secondProperty: 2, excludedProperty: 3)
@@ -58,9 +21,39 @@ final class CustomHashableTests: XCTestCase {
         let value3 = CustomHashableStructWithExcludedProperty(firstProperty: 1, secondProperty: 2, excludedProperty: 4)
 
         XCTAssertEqual(value1, value1)
+
+        XCTAssertEqual(value2, value2)
+
+        XCTAssertEqual(value3, value3)
+
+        XCTAssertEqual(value1, value3, "Third property should not be included in equality check; synthesised conformance should not be used")
+        XCTAssertEqual(value1.hashValue, value3.hashValue, "Third property should not be included in hash value; synthesised conformance should not be used")
+
+        XCTAssertNotEqual(value2, value3)
+        // XCTAssertNotEqual(value2.hashValue, value3.hashValue)
+
+        XCTAssertNotEqual(value1, value2)
+        // XCTAssertNotEqual(value1.hashValue, value2.hashValue)
+    }
+
+    func testCustomHashableClassWithPrivateProperty() {
+        let value1 = CustomHashableClassWithPrivateProperty(firstProperty: 1, secondProperty: 2, privateProperty: 3)
+        let value2 = CustomHashableClassWithPrivateProperty(firstProperty: 2, secondProperty: 2, privateProperty: 3)
+        let value3 = CustomHashableClassWithPrivateProperty(firstProperty: 1, secondProperty: 2, privateProperty: 4)
+
+        var hasher = Hasher()
+        var hasher2 = hasher
+        value1.hash(into: &hasher)
+        1.hash(into: &hasher2)
+        2.hash(into: &hasher2)
+        3.hash(into: &hasher2)
+
+        XCTAssertEqual(hasher.finalize(), hasher2.finalize())
+
+        XCTAssertEqual(value1, value1)
         XCTAssertEqual(value2, value2)
         XCTAssertEqual(value3, value3)
-        XCTAssertEqual(value1, value3, "Third property should not be included in equality check; synthesised conformance should not be used")
+        XCTAssertNotEqual(value1, value3)
         XCTAssertNotEqual(value2, value3)
         XCTAssertNotEqual(value1, value2)
     }

@@ -1,6 +1,4 @@
-import Foundation
-
-@attached(member, names: arbitrary)
+@attached(member, names: named(hash), named(customEquals))
 @attached(conformance)
 public macro CustomHashable() = #externalMacro(module: "CustomHashablePlugin", type: "CustomHashable")
 

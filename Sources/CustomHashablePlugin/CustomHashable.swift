@@ -1,3 +1,4 @@
+import Foundation
 import SwiftDiagnostics
 import SwiftSyntax
 import SwiftSyntaxMacros
@@ -33,11 +34,10 @@ public struct CustomHashable: ConformanceMacro, MemberMacro {
             inheritedTypes.contains(where: { inherited in inherited.typeName.trimmedDescription == "Hashable" })
         {
             // Hashable conformance has been added explicitly.
-            return []
+            return [("CustomEqualityProviding", nil)]
         }
 
-        // TODO: Fix compilation when adding conformance to a struct; adding `Hashable` conformance in a extension is not supported.
-        return [("Hashable", nil)]
+        return [("CustomEqualityProviding", nil), ("Hashable", nil)]
     }
 
     public static func expansion(
@@ -47,43 +47,6 @@ public struct CustomHashable: ConformanceMacro, MemberMacro {
     ) throws -> [DeclSyntax] {
         guard let identifiedDeclaration = declaration as? IdentifiedDeclSyntax else {
             throw InvalidDeclarationTypeError()
-        }
-
-        let inheritanceClause: TypeInheritanceClauseSyntax?
-
-        if let structDecl = declaration.as(StructDeclSyntax.self) {
-            inheritanceClause = structDecl.inheritanceClause
-        } else if let classDecl = declaration.as(ClassDeclSyntax.self) {
-            inheritanceClause = classDecl.inheritanceClause
-        } else {
-            inheritanceClause = nil
-        }
-
-        var hasSuperclass = false
-
-        if let inheritanceClause {
-            for (index, inheritedType) in inheritanceClause.inheritedTypeCollection.enumerated() {
-                print("ArrayTypeSyntax", inheritedType.typeName.is(ArrayTypeSyntax.self))
-                print("AttributedTypeSyntax", inheritedType.typeName.is(AttributedTypeSyntax.self))
-                print("ClassRestrictionTypeSyntax", inheritedType.typeName.is(ClassRestrictionTypeSyntax.self))
-                print("CompositionTypeSyntax", inheritedType.typeName.is(CompositionTypeSyntax.self))
-                print("ConstrainedSugarTypeSyntax", inheritedType.typeName.is(ConstrainedSugarTypeSyntax.self))
-                print("DictionaryTypeSyntax", inheritedType.typeName.is(DictionaryTypeSyntax.self))
-                print("FunctionTypeSyntax", inheritedType.typeName.is(FunctionTypeSyntax.self))
-                print("ImplicitlyUnwrappedOptionalTypeSyntax", inheritedType.typeName.is(ImplicitlyUnwrappedOptionalTypeSyntax.self))
-                print("MemberTypeIdentifierSyntax", inheritedType.typeName.is(MemberTypeIdentifierSyntax.self))
-                print("MetatypeTypeSyntax", inheritedType.typeName.is(MetatypeTypeSyntax.self))
-                print("MissingTypeSyntax", inheritedType.typeName.is(MissingTypeSyntax.self))
-                print("NamedOpaqueReturnTypeSyntax", inheritedType.typeName.is(NamedOpaqueReturnTypeSyntax.self))
-                print("OptionalTypeSyntax", inheritedType.typeName.is(OptionalTypeSyntax.self))
-                print("PackExpansionTypeSyntax", inheritedType.typeName.is(PackExpansionTypeSyntax.self))
-                print("PackReferenceTypeSyntax", inheritedType.typeName.is(PackReferenceTypeSyntax.self))
-                print("SimpleTypeIdentifierSyntax", inheritedType.typeName.is(SimpleTypeIdentifierSyntax.self))
-                print("TupleTypeSyntax", inheritedType.typeName.is(TupleTypeSyntax.self))
-                print("TypeSyntax", inheritedType.typeName.is(TypeSyntax.self))
-
-                // TODO: When `index == 0` check if the inherited type is a class or implicitly adds Hashable conformance
-            }
         }
 
         let scope = ({
@@ -126,30 +89,20 @@ public struct CustomHashable: ConformanceMacro, MemberMacro {
         })
 
         var hashIntoImplementation: String =  """
-            \(scope)\(hasSuperclass ? "override " : "")func hash(into hasher: inout Hasher) {
+            \(scope)func hash(into hasher: inout Hasher) {
         """
 
-        if hasSuperclass {
-            hashIntoImplementation += "\n"
-            hashIntoImplementation += "    super.hash(into: &hasher))"
-        }
-
         var equalityImplementation: String =  """
-            \(scope)\(hasSuperclass ? "override " : "")static func ==(lhs: \(identifiedDeclaration.identifier.text), rhs: \(identifiedDeclaration.identifier.text)) -> Bool {
+            \(scope)static func customEquals(lhs: \(identifiedDeclaration.identifier.text), rhs: \(identifiedDeclaration.identifier.text)) -> Bool {
         """
 
         for (index, propertyName) in propertyNames.enumerated() {
             hashIntoImplementation += "\n"
             hashIntoImplementation += "    hasher.combine(\(propertyName))"
+
             equalityImplementation += "\n"
             if index == 0 {
-                if hasSuperclass {
-                    hashIntoImplementation += "\n"
-                    hashIntoImplementation += "    super.==(lhs: lhs, rhs: rhs)"
-                    equalityImplementation += "        && lhs.\(propertyName) == rhs.\(propertyName)"
-                } else {
-                    equalityImplementation += "    lhs.\(propertyName) == rhs.\(propertyName)"
-                }
+                equalityImplementation += "    lhs.\(propertyName) == rhs.\(propertyName)"
             } else {
                 equalityImplementation += "        && lhs.\(propertyName) == rhs.\(propertyName)"
             }
@@ -166,8 +119,8 @@ public struct CustomHashable: ConformanceMacro, MemberMacro {
         equalityImplementation += "}"
 
         return [
-            DeclSyntax(stringLiteral: hashIntoImplementation),
-            DeclSyntax(stringLiteral: equalityImplementation),
+            "\(raw: hashIntoImplementation)",
+            "\(raw: equalityImplementation)",
         ]
     }
 }
