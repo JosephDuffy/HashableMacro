@@ -1,4 +1,4 @@
-// swift-tools-version:999.0
+// swift-tools-version:5.9
 import CompilerPluginSupport
 import PackageDescription
 
@@ -33,6 +33,9 @@ let package = Package(
       name: "CustomHashable",
       dependencies: [
         "CustomHashablePlugin",
+      ],
+      swiftSettings: [
+        .enableExperimentalFeature("Macros"),
       ]
     ),
     .testTarget(
