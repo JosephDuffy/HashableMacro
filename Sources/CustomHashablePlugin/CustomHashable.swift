@@ -59,7 +59,8 @@ public struct CustomHashable: ConformanceMacro, MemberMacro {
                 case .keyword(.fileprivate):
                     return "fileprivate "
                 case .keyword(.private):
-                    return "private "
+                    // The added functions should never be private
+                    return ""
                 default:
                     break
                 }
