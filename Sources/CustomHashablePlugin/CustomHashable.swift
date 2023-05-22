@@ -94,18 +94,18 @@ public struct CustomHashable: ConformanceMacro, MemberMacro {
         """
 
         var equalityImplementation: String =  """
-            \(scope)static func customEquals(lhs: \(identifiedDeclaration.identifier.text), rhs: \(identifiedDeclaration.identifier.text)) -> Bool {
+        \(scope)static func customEquals(lhs: \(identifiedDeclaration.identifier.text), rhs: \(identifiedDeclaration.identifier.text)) -> Bool {
         """
 
         for (index, propertyName) in propertyNames.enumerated() {
             hashIntoImplementation += "\n"
-            hashIntoImplementation += "    hasher.combine(\(propertyName))"
+            hashIntoImplementation += "hasher.combine(\(propertyName))"
 
             equalityImplementation += "\n"
             if index == 0 {
-                equalityImplementation += "    lhs.\(propertyName) == rhs.\(propertyName)"
+                equalityImplementation += "lhs.\(propertyName) == rhs.\(propertyName)"
             } else {
-                equalityImplementation += "        && lhs.\(propertyName) == rhs.\(propertyName)"
+                equalityImplementation += "    && lhs.\(propertyName) == rhs.\(propertyName)"
             }
         }
 
