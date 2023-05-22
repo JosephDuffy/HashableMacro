@@ -94,6 +94,7 @@ public struct CustomHashable: ConformanceMacro, MemberMacro {
         """
 
         var equalityImplementation: String =  """
+            @inline(__always)
         \(scope)static func customEquals(lhs: \(identifiedDeclaration.identifier.text), rhs: \(identifiedDeclaration.identifier.text)) -> Bool {
         """
 
