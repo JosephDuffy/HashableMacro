@@ -2,19 +2,6 @@ import XCTest
 import CustomHashable
 
 final class CustomHashableTests: XCTestCase {
-    // func testCustomHashableStructMultipleProperties() {
-    //     let value1 = CustomHashableStructWithMultipleProperties(firstProperty: 1, secondProperty: 2, thirdProperty: 3)
-    //     let value2 = CustomHashableStructWithMultipleProperties(firstProperty: 2, secondProperty: 2, thirdProperty: 3)
-    //     let value3 = CustomHashableStructWithMultipleProperties(firstProperty: 1, secondProperty: 2, thirdProperty: 4)
-
-    //     XCTAssertEqual(value1, value1)
-    //     XCTAssertEqual(value2, value2)
-    //     XCTAssertEqual(value3, value3)
-    //     XCTAssertNotEqual(value1, value3)
-    //     XCTAssertNotEqual(value2, value3)
-    //     XCTAssertNotEqual(value1, value2)
-    // }
-
     func testCustomHashableStructWithExcludedProperty() {
         let value1 = CustomHashableStructWithExcludedProperty(firstProperty: 1, secondProperty: 2, excludedProperty: 3)
         let value2 = CustomHashableStructWithExcludedProperty(firstProperty: 2, secondProperty: 2, excludedProperty: 3)
