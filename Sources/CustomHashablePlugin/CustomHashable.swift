@@ -34,10 +34,10 @@ public struct CustomHashable: ConformanceMacro, MemberMacro {
             inheritedTypes.contains(where: { inherited in inherited.typeName.trimmedDescription == "Hashable" })
         {
             // Hashable conformance has been added explicitly.
-            return [("CustomEqualityProviding", nil)]
+            return []
         }
 
-        return [("CustomEqualityProviding", nil), ("Hashable", nil)]
+        return [("Hashable", nil)]
     }
 
     public static func expansion(
@@ -94,8 +94,7 @@ public struct CustomHashable: ConformanceMacro, MemberMacro {
         """
 
         var equalityImplementation: String =  """
-            @inline(__always)
-        \(scope)static func customEquals(lhs: \(identifiedDeclaration.identifier.text), rhs: \(identifiedDeclaration.identifier.text)) -> Bool {
+            \(scope)static func ==(lhs: \(identifiedDeclaration.identifier.text), rhs: \(identifiedDeclaration.identifier.text)) -> Bool {
         """
 
         for (index, propertyName) in propertyNames.enumerated() {

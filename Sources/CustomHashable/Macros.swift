@@ -1,4 +1,4 @@
-@attached(member, names: named(hash), named(customEquals))
+@attached(member, names: named(hash), named(==))
 @attached(conformance)
 public macro CustomHashable() = #externalMacro(module: "CustomHashablePlugin", type: "CustomHashable")
 
