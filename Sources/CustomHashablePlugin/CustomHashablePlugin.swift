@@ -1,4 +1,3 @@
-#if canImport(SwiftCompilerPlugin)
 import SwiftCompilerPlugin
 import SwiftSyntaxMacros
 
@@ -9,4 +8,3 @@ struct CustomHashablePlugin: CompilerPlugin {
     HashableKey.self,
   ]
 }
-#endif
