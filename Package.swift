@@ -37,9 +37,6 @@ let package = Package(
       name: "CustomHashable",
       dependencies: [
         "CustomHashablePlugin",
-      ],
-      swiftSettings: [
-        .enableExperimentalFeature("Macros"),
       ]
     ),
     .testTarget(
