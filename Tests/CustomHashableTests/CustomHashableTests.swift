@@ -17,10 +17,10 @@ final class CustomHashableTests: XCTestCase {
         XCTAssertEqual(value1.hashValue, value3.hashValue, "Third property should not be included in hash value; synthesised conformance should not be used")
 
         XCTAssertNotEqual(value2, value3)
-        // XCTAssertNotEqual(value2.hashValue, value3.hashValue)
+        XCTAssertNotEqual(value2.hashValue, value3.hashValue)
 
         XCTAssertNotEqual(value1, value2)
-        // XCTAssertNotEqual(value1.hashValue, value2.hashValue)
+        XCTAssertNotEqual(value1.hashValue, value2.hashValue)
     }
 
     func testCustomHashableClassWithPrivateProperty() {
