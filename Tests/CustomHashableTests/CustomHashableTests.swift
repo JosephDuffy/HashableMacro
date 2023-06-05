@@ -58,8 +58,8 @@ private struct CustomHashableStructWithExcludedProperty {
 
     init(firstProperty: Int, secondProperty: Int, excludedProperty: Int) {
         self.firstProperty = firstProperty
-            self.secondProperty = secondProperty
-self.excludedProperty = excludedProperty
+        self.secondProperty = secondProperty
+        self.excludedProperty = excludedProperty
     }
 }
 
