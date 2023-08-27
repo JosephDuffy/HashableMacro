@@ -3,41 +3,35 @@ import SwiftDiagnostics
 import SwiftSyntax
 import SwiftSyntaxMacros
 
-public struct CustomHashable: ConformanceMacro, MemberMacro {
+public struct CustomHashable: ExtensionMacro, MemberMacro {
     public static func expansion(
-        of attribute: AttributeSyntax,
-        providingConformancesOf declaration: some DeclGroupSyntax,
+        of node: AttributeSyntax,
+        attachedTo declaration: some DeclGroupSyntax,
+        providingExtensionsOf type: some TypeSyntaxProtocol,
+        conformingTo protocols: [TypeSyntax],
         in context: some MacroExpansionContext
-    ) throws -> [(TypeSyntax, GenericWhereClauseSyntax?)] {
-        let inheritanceClause: TypeInheritanceClauseSyntax?
+    ) throws -> [ExtensionDeclSyntax] {
+        guard let hashableType = protocols.first else {
+            // Hashable conformance has been explicitly added.
+            return []
+        }
 
-        if let structDecl = declaration.as(StructDeclSyntax.self) {
-            inheritanceClause = structDecl.inheritanceClause
-        } else if let classDecl = declaration.as(ClassDeclSyntax.self) {
-            inheritanceClause = classDecl.inheritanceClause
-        } else {
-            context.diagnose(
-                Diagnostic(
-                    node: Syntax(declaration),
-                    message: ErrorDiagnosticMessage(
-                        id: "unsupported-type",
-                        message: "'CustomHashable' macro can only be applied to structs and classes"
-                    )
-                )
+        assert("\(hashableType.trimmed)" == "Hashable", "Only expected to add Hashable conformance")
+        assert(protocols.count == 1, "Only expected to add conformance to a single protocol")
+
+        return [
+            ExtensionDeclSyntax(
+                extendedType: type,
+                inheritanceClause: InheritanceClauseSyntax(
+                    inheritedTypes: InheritedTypeListSyntax(itemsBuilder: {
+                        InheritedTypeSyntax(
+                            type: hashableType
+                        )
+                    })
+                ),
+                memberBlockBuilder: {}
             )
-
-            return []
-        }
-
-        if
-            let inheritedTypes = inheritanceClause?.inheritedTypeCollection,
-            inheritedTypes.contains(where: { inherited in inherited.typeName.trimmedDescription == "Hashable" })
-        {
-            // Hashable conformance has been added explicitly.
-            return []
-        }
-
-        return [("Hashable", nil)]
+        ]
     }
 
     public static func expansion(
@@ -45,12 +39,12 @@ public struct CustomHashable: ConformanceMacro, MemberMacro {
         providingMembersOf declaration: some DeclGroupSyntax,
         in context: some MacroExpansionContext
     ) throws -> [DeclSyntax] {
-        guard let identifiedDeclaration = declaration as? IdentifiedDeclSyntax else {
+        guard let namedDeclaration = declaration as? NamedDeclSyntax else {
             throw InvalidDeclarationTypeError()
         }
 
         let scope = ({
-            for modifier in declaration.modifiers ?? [] {
+            for modifier in declaration.modifiers {
                 switch (modifier.name.tokenKind) {
                 case .keyword(.public):
                     return "public "
@@ -78,8 +72,8 @@ public struct CustomHashable: ConformanceMacro, MemberMacro {
                 return nil
             }
 
-            let hasHashableKeyMacro = member.decl.as(VariableDeclSyntax.self)?.attributes?.contains(where: { element in
-                element.as(AttributeSyntax.self)?.attributeName.as(SimpleTypeIdentifierSyntax.self)?.description == "HashableKey"
+            let hasHashableKeyMacro = member.decl.as(VariableDeclSyntax.self)?.attributes.contains(where: { element in
+                element.as(AttributeSyntax.self)?.attributeName.as(IdentifierTypeSyntax.self)?.description == "HashableKey"
             }) == true
 
             if hasHashableKeyMacro {
@@ -94,7 +88,7 @@ public struct CustomHashable: ConformanceMacro, MemberMacro {
         """
 
         var equalityImplementation: String =  """
-            \(scope)static func ==(lhs: \(identifiedDeclaration.identifier.text), rhs: \(identifiedDeclaration.identifier.text)) -> Bool {
+            \(scope)static func ==(lhs: \(namedDeclaration.name.text), rhs: \(namedDeclaration.name.text)) -> Bool {
         """
 
         for (index, propertyName) in propertyNames.enumerated() {

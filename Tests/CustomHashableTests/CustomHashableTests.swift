@@ -4,8 +4,9 @@ import CustomHashable
 final class CustomHashableTests: XCTestCase {
     func testCustomHashableStructWithExcludedProperty() {
         let value1 = CustomHashableStructWithExcludedProperty(firstProperty: 1, secondProperty: 2, excludedProperty: 3)
-        let value2 = CustomHashableStructWithExcludedProperty(firstProperty: 2, secondProperty: 2, excludedProperty: 3)
+        let value2 = CustomHashableStructWithExcludedProperty(firstProperty: 1, secondProperty: 3, excludedProperty: 3)
         let value3 = CustomHashableStructWithExcludedProperty(firstProperty: 1, secondProperty: 2, excludedProperty: 4)
+        let value4 = CustomHashableStructWithExcludedProperty(firstProperty: 2, secondProperty: 3, excludedProperty: 3)
 
         XCTAssertEqual(value1, value1)
 
@@ -13,11 +14,16 @@ final class CustomHashableTests: XCTestCase {
 
         XCTAssertEqual(value3, value3)
 
+        XCTAssertEqual(value4, value4)
+
         XCTAssertEqual(value1, value3, "Third property should not be included in equality check; synthesised conformance should not be used")
         XCTAssertEqual(value1.hashValue, value3.hashValue, "Third property should not be included in hash value; synthesised conformance should not be used")
 
         XCTAssertNotEqual(value2, value3)
         XCTAssertNotEqual(value2.hashValue, value3.hashValue)
+
+        XCTAssertNotEqual(value2, value4)
+        XCTAssertNotEqual(value2.hashValue, value4.hashValue)
 
         XCTAssertNotEqual(value1, value2)
         XCTAssertNotEqual(value1.hashValue, value2.hashValue)
@@ -43,6 +49,13 @@ final class CustomHashableTests: XCTestCase {
         XCTAssertNotEqual(value1, value3)
         XCTAssertNotEqual(value2, value3)
         XCTAssertNotEqual(value1, value2)
+    }
+
+    func testTypeExplicitlyConformingToHashable() {
+        let value1 = TypeExplicitlyConformingToHashable()
+        let value2 = TypeExplicitlyConformingToHashable()
+
+        XCTAssertEqual(value1, value2)
     }
 }
 
@@ -80,3 +93,6 @@ public class CustomHashableClassWithPrivateProperty {
         self.privateProperty = privateProperty
     }
 }
+
+@CustomHashable
+public class TypeExplicitlyConformingToHashable: Hashable {}
