@@ -1,5 +1,13 @@
+import CustomHashablePlugin
 import XCTest
 import CustomHashable
+import SwiftSyntaxMacros
+import SwiftSyntaxMacrosTestSupport
+
+private let testMacros: [String: Macro.Type] = [
+    "CustomHashable": CustomHashable.self,
+    "HashableKey": HashableKey.self,
+]
 
 final class CustomHashableTests: XCTestCase {
     func testCustomHashableStructWithExcludedProperty() {
@@ -51,11 +59,47 @@ final class CustomHashableTests: XCTestCase {
         XCTAssertNotEqual(value1, value2)
     }
 
-    func testTypeExplicitlyConformingToHashable() {
-        let value1 = TypeExplicitlyConformingToHashable()
-        let value2 = TypeExplicitlyConformingToHashable()
+    func testTypeNotExplicitlyConformingToHashable() {
+        assertMacroExpansion(
+            """
+            @CustomHashable
+            struct TypeNotExplicitlyConformingToHashable {
+                @HashableKey
+                var hashablePropery1: String
 
-        XCTAssertEqual(value1, value2)
+                @HashableKey
+                var hashablePropery2: String
+
+                @HashableKey
+                let hashablePropery3: String
+
+                var notHashablePropery: String
+            }
+            """,
+            expandedSource: """
+
+            struct TypeNotExplicitlyConformingToHashable {
+                var hashablePropery1: String
+                var hashablePropery2: String
+                let hashablePropery3: String
+
+                var notHashablePropery: String
+
+                func hash(into hasher: inout Hasher) {
+                    hasher.combine(hashablePropery1)
+                    hasher.combine(hashablePropery2)
+                    hasher.combine(hashablePropery3)
+                }
+            
+                static func == (lhs: TypeNotExplicitlyConformingToHashable, rhs: TypeNotExplicitlyConformingToHashable) -> Bool {
+                    return lhs.hashablePropery1 == rhs.hashablePropery1
+                        && lhs.hashablePropery2 == rhs.hashablePropery2
+                        && lhs.hashablePropery3 == rhs.hashablePropery3
+                }
+            }
+            """,
+            macros: testMacros
+        )
     }
 }
 
@@ -94,5 +138,26 @@ public class CustomHashableClassWithPrivateProperty {
     }
 }
 
+/// A type that explicitly conforms to `Hashable`; the macro should not try to
+/// add conformance (but it should still add the implementation required).
 @CustomHashable
 public class TypeExplicitlyConformingToHashable: Hashable {}
+
+/// A type that includes multiple properties declared on the same line.
+///
+/// The macro supports this but using `assertMacroExpansion` raises an error:
+///
+/// _swift-syntax applies macros syntactically and there is no way to represent a variable declaration with multiple bindings that have accessors syntactically. While the compiler allows this expansion, swift-syntax cannot represent it and thus disallows it._
+@CustomHashable
+struct TypeWithMultipleVariablesOnSameLine {
+    @HashableKey
+    var hashablePropery1: String
+
+    @HashableKey
+    var hashablePropery2: String
+
+    @HashableKey
+    let hashablePropery3, hashablePropery4: String
+
+    var notHashablePropery: String
+}

@@ -29,7 +29,7 @@ public struct CustomHashable: ExtensionMacro, MemberMacro {
                         )
                     })
                 ),
-                memberBlockBuilder: {}
+                memberBlock: MemberBlockSyntax(members: "")
             )
         ]
     }
@@ -42,6 +42,22 @@ public struct CustomHashable: ExtensionMacro, MemberMacro {
         guard let namedDeclaration = declaration as? NamedDeclSyntax else {
             throw InvalidDeclarationTypeError()
         }
+
+        let baseModifiers = declaration.modifiers.filter({ modifier in
+            switch (modifier.name.tokenKind) {
+            case .keyword(.public):
+                return true
+            case .keyword(.internal):
+                return true
+            case .keyword(.fileprivate):
+                return true
+            case .keyword(.private):
+                // The added functions should never be private
+                return false
+            default:
+                return false
+            }
+        })
 
         let scope = ({
             for modifier in declaration.modifiers {
@@ -65,21 +81,27 @@ public struct CustomHashable: ExtensionMacro, MemberMacro {
 
         let memberList = declaration.memberBlock.members
 
-        let propertyNames = memberList.compactMap({ member -> String? in
+        let propertyNames = memberList.flatMap({ member -> [TokenSyntax] in
             // is a property
-            guard
-                let propertyName = member.decl.as(VariableDeclSyntax.self)?.bindings.first?.pattern.as(IdentifierPatternSyntax.self)?.identifier.text else {
-                return nil
+            guard let variable = member.decl.as(VariableDeclSyntax.self) else {
+                return []
             }
 
-            let hasHashableKeyMacro = member.decl.as(VariableDeclSyntax.self)?.attributes.contains(where: { element in
-                element.as(AttributeSyntax.self)?.attributeName.as(IdentifierTypeSyntax.self)?.description == "HashableKey"
-            }) == true
+            let hasHashableKeyMacro = variable.attributes.contains(where: { element in
+                let attributeName = element.as(AttributeSyntax.self)?.attributeName.as(IdentifierTypeSyntax.self)?.name.text
+                 return attributeName == "HashableKey"
+            })
 
             if hasHashableKeyMacro {
-                return propertyName
+                return variable.bindings.compactMap({ binding in
+                    binding
+                        .as(PatternBindingSyntax.self)?
+                        .pattern
+                        .as(IdentifierPatternSyntax.self)?
+                        .identifier
+                })
             } else {
-                return nil
+                return []
             }
         })
 
@@ -87,35 +109,125 @@ public struct CustomHashable: ExtensionMacro, MemberMacro {
             \(scope)func hash(into hasher: inout Hasher) {
         """
 
-        var equalityImplementation: String =  """
-            \(scope)static func ==(lhs: \(namedDeclaration.name.text), rhs: \(namedDeclaration.name.text)) -> Bool {
-        """
+        let equalsFunctionSignature = FunctionSignatureSyntax(
+            parameterClause: FunctionParameterClauseSyntax(
+                parameters: [
+                    FunctionParameterSyntax(
+                        firstName: TokenSyntax.identifier("lhs"),
+                        type: TypeSyntax(stringLiteral: namedDeclaration.name.text),
+                        trailingComma: .commaToken(trailingTrivia: .space)
+                    ),
+                    FunctionParameterSyntax(
+                        firstName: TokenSyntax.identifier("rhs"),
+                        type: TypeSyntax(stringLiteral: namedDeclaration.name.text)
+                    ),
+                ],
+                rightParen: TokenSyntax.rightParenToken(trailingTrivia: .space)
+            ),
+            returnClause: ReturnClauseSyntax(
+                arrow: .arrowToken(trailingTrivia: .space),
+                type: IdentifierTypeSyntax(name: .identifier("Bool")),
+                trailingTrivia: .space
+            )
+        )
 
-        for (index, propertyName) in propertyNames.enumerated() {
+        // Newline leading trivia cannot be used here; it produces an error:
+        // > swift-syntax applies macros syntactically and there is no way to represent a variable declaration with multiple bindings that have accessors syntactically. While the compiler allows this expansion, swift-syntax cannot represent it and thus disallows it.
+        let equalsBody = CodeBlockSyntax(
+            leftBrace: .leftBraceToken(trailingTrivia: .newline),
+            statements: CodeBlockItemListSyntax(itemsBuilder: {
+                CodeBlockItemSyntax(
+                    item: CodeBlockItemSyntax.Item(
+                        ReturnStmtSyntax(trailingTrivia: .space)
+                    )
+                )
+
+                if propertyNames.isEmpty {
+                    CodeBlockItemSyntax(
+                        item: CodeBlockItemSyntax.Item(
+                            BooleanLiteralExprSyntax(booleanLiteral: true)
+                        )
+                    )
+                }
+
+                for (index, propertyToken) in propertyNames.enumerated() {
+                    //MemberAccessExprSyntax
+                    CodeBlockItemSyntax(
+                        item: CodeBlockItemSyntax.Item(
+                            SequenceExprSyntax(
+                                elementsBuilder: {
+                                    MemberAccessExprSyntax(
+                                        base: DeclReferenceExprSyntax(
+                                            baseName: .identifier("lhs")
+                                        ),
+                                        declName: DeclReferenceExprSyntax(
+                                            baseName: propertyToken
+                                        )
+                                    )
+                                }
+                            )
+                        )
+                    )
+
+                    BinaryOperatorExprSyntax(
+                        leadingTrivia: .space,
+                        operator: .binaryOperator("=="),
+                        trailingTrivia: .space
+                    )
+
+                    CodeBlockItemSyntax(
+                        item: CodeBlockItemSyntax.Item(
+                            SequenceExprSyntax(
+                                elementsBuilder: {
+                                    MemberAccessExprSyntax(
+                                        base: DeclReferenceExprSyntax(
+                                            baseName: .identifier("rhs")
+                                        ),
+                                        declName: DeclReferenceExprSyntax(
+                                            baseName: propertyToken
+                                        )
+                                    )
+                                }
+                            )
+                        )
+                    )
+
+                    if index + 1 != propertyNames.count {
+                        BinaryOperatorExprSyntax(
+                            leadingTrivia: .newline.appending(Trivia.spaces(4)),
+                            operator: .binaryOperator("&&"),
+                            trailingTrivia: .space
+                        )
+                    }
+                }
+            }),
+            rightBrace: .rightBraceToken(leadingTrivia: .newline)
+        )
+
+        var equalsFunctionModifiers = baseModifiers
+        equalsFunctionModifiers.append(
+            DeclModifierSyntax(name: .keyword(.static, trailingTrivia: .space))
+        )
+
+        let equalsFunction = FunctionDeclSyntax(
+            modifiers: equalsFunctionModifiers,
+            funcKeyword: .keyword(.func, trailingTrivia: .space),
+            name: TokenSyntax.identifier("=="),
+            signature: equalsFunctionSignature,
+            body: equalsBody
+        )
+
+        for propertyName in propertyNames {
             hashIntoImplementation += "\n"
             hashIntoImplementation += "hasher.combine(\(propertyName))"
-
-            equalityImplementation += "\n"
-            if index == 0 {
-                equalityImplementation += "lhs.\(propertyName) == rhs.\(propertyName)"
-            } else {
-                equalityImplementation += "    && lhs.\(propertyName) == rhs.\(propertyName)"
-            }
-        }
-
-        if propertyNames.isEmpty {
-            equalityImplementation += "\n"
-            equalityImplementation += "true"
         }
 
         hashIntoImplementation += "\n"
         hashIntoImplementation += "}"
-        equalityImplementation += "\n"
-        equalityImplementation += "}"
 
         return [
             "\(raw: hashIntoImplementation)",
-            "\(raw: equalityImplementation)",
+            "\(equalsFunction)",
         ]
     }
 }

@@ -41,7 +41,12 @@ let package = Package(
     ),
     .testTarget(
       name: "CustomHashableTests",
-      dependencies: ["CustomHashable"]
+      dependencies: [
+        "CustomHashable",
+        "CustomHashablePlugin",
+        .product(name: "SwiftSyntaxMacros", package: "swift-syntax"),
+        .product(name: "SwiftSyntaxMacrosTestSupport", package: "swift-syntax"),
+      ]
     ),
   ]
 )
