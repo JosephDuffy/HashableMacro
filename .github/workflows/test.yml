@@ -9,7 +9,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Use Xcode 15.0
-        run: xcode-select --switch /Applications/Xcode_15.0.app
+        run: sudo xcode-select --switch /Applications/Xcode_15.0.app
       - name: Build
         run: swift build
       - name: Test
