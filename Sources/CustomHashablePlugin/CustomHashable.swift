@@ -149,7 +149,6 @@ public struct CustomHashable: ExtensionMacro, MemberMacro {
                 }
 
                 for (index, propertyToken) in propertyNames.enumerated() {
-                    //MemberAccessExprSyntax
                     CodeBlockItemSyntax(
                         item: CodeBlockItemSyntax.Item(
                             SequenceExprSyntax(
