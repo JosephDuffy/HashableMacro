@@ -131,8 +131,6 @@ public struct CustomHashable: ExtensionMacro, MemberMacro {
             )
         )
 
-        // Newline leading trivia cannot be used here; it produces an error:
-        // > swift-syntax applies macros syntactically and there is no way to represent a variable declaration with multiple bindings that have accessors syntactically. While the compiler allows this expansion, swift-syntax cannot represent it and thus disallows it.
         let equalsBody = CodeBlockSyntax(
             leftBrace: .leftBraceToken(trailingTrivia: .newline),
             statements: CodeBlockItemListSyntax(itemsBuilder: {
