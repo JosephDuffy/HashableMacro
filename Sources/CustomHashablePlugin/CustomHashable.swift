@@ -59,26 +59,6 @@ public struct CustomHashable: ExtensionMacro, MemberMacro {
             }
         })
 
-        let scope = ({
-            for modifier in declaration.modifiers {
-                switch (modifier.name.tokenKind) {
-                case .keyword(.public):
-                    return "public "
-                case .keyword(.internal):
-                    return "internal "
-                case .keyword(.fileprivate):
-                    return "fileprivate "
-                case .keyword(.private):
-                    // The added functions should never be private
-                    return ""
-                default:
-                    break
-                }
-            }
-
-            return ""
-        })()
-
         let memberList = declaration.memberBlock.members
 
         let propertyNames = memberList.flatMap({ member -> [TokenSyntax] in
@@ -104,10 +84,6 @@ public struct CustomHashable: ExtensionMacro, MemberMacro {
                 return []
             }
         })
-
-        var hashIntoImplementation: String =  """
-            \(scope)func hash(into hasher: inout Hasher) {
-        """
 
         let equalsFunctionSignature = FunctionSignatureSyntax(
             parameterClause: FunctionParameterClauseSyntax(
@@ -214,16 +190,57 @@ public struct CustomHashable: ExtensionMacro, MemberMacro {
             body: equalsBody
         )
 
-        for propertyName in propertyNames {
-            hashIntoImplementation += "\n"
-            hashIntoImplementation += "hasher.combine(\(propertyName))"
-        }
+        let hashFunctionSignature = FunctionSignatureSyntax(
+            parameterClause: FunctionParameterClauseSyntax(
+                parameters: [
+                    FunctionParameterSyntax(
+                        firstName: TokenSyntax.identifier("into", trailingTrivia: .space),
+                        secondName: TokenSyntax.identifier("hasher"),
+                        type: AttributedTypeSyntax(
+                            specifier: .keyword(.inout, trailingTrivia: .space),
+                            baseType: TypeSyntax(stringLiteral: "Hasher")
+                        )
+                    ),
+                ],
+                rightParen: TokenSyntax.rightParenToken(trailingTrivia: .space)
+            )
+        )
 
-        hashIntoImplementation += "\n"
-        hashIntoImplementation += "}"
+        let hashFunctionBody = CodeBlockSyntax(
+            leftBrace: .leftBraceToken(trailingTrivia: .newline),
+            statements: CodeBlockItemListSyntax(itemsBuilder: {
+                for propertyToken in propertyNames {
+                    FunctionCallExprSyntax(
+                        callee: MemberAccessExprSyntax(
+                            base: DeclReferenceExprSyntax(baseName: "hasher"),
+                            period: .periodToken(),
+                            name: .identifier("combine")
+                        ),
+                        argumentList: {
+                            LabeledExprSyntax(
+                                expression: MemberAccessExprSyntax(
+                                    base: DeclReferenceExprSyntax(baseName: .keyword(.`self`)),
+                                    period: .periodToken(),
+                                    name: propertyToken
+                                )
+                            )
+                        }
+                    )
+                }
+            }),
+            rightBrace: .rightBraceToken(leadingTrivia: .newline)
+        )
+
+        let hashFunction = FunctionDeclSyntax(
+            modifiers: baseModifiers,
+            funcKeyword: .keyword(.func, trailingTrivia: .space),
+            name: TokenSyntax.identifier("hash"),
+            signature: hashFunctionSignature,
+            body: hashFunctionBody
+        )
 
         return [
-            "\(raw: hashIntoImplementation)",
+            "\(hashFunction)",
             "\(equalsFunction)",
         ]
     }

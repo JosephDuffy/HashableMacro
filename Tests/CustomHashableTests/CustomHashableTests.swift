@@ -86,9 +86,9 @@ final class CustomHashableTests: XCTestCase {
                 var notHashablePropery: String
 
                 func hash(into hasher: inout Hasher) {
-                    hasher.combine(hashablePropery1)
-                    hasher.combine(hashablePropery2)
-                    hasher.combine(hashablePropery3)
+                    hasher.combine(self.hashablePropery1)
+                    hasher.combine(self.hashablePropery2)
+                    hasher.combine(self.hashablePropery3)
                 }
             
                 static func == (lhs: TypeNotExplicitlyConformingToHashable, rhs: TypeNotExplicitlyConformingToHashable) -> Bool {
