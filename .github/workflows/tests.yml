@@ -1,0 +1,134 @@
+name: Tests
+
+on:
+  push:
+  pull_request:
+    branches:
+      - "**:**" # PRs from forks have a prefix with `owner:`
+
+jobs:
+  macos_tests:
+    name: macOS Tests (SwiftPM, Xcode ${{ matrix.xcode }})
+    runs-on: "macos-13"
+    strategy:
+      fail-fast: false
+      matrix:
+        xcode: ["15.0"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode ${{ matrix.xcode }}
+        run: sudo xcode-select --switch /Applications/Xcode_${{ matrix.xcode }}.app
+
+      - name: Cache SwiftPM
+        uses: actions/cache@v3
+        with:
+          path: .build
+          key: ${{ runner.os }}-xcode_${{ matrix.xcode }}-swiftpm-deps-${{ github.workspace }}-${{ hashFiles('Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-xcode_${{ matrix.xcode }}-swiftpm-deps-${{ github.workspace }}
+
+      - name: SwiftPM tests
+        run: swift test --enable-code-coverage
+
+      - name: Convert coverage for Codecov
+        id: convert-coverage
+        uses: sersoft-gmbh/swift-coverage-action@v4
+        with:
+          ignore-conversion-failures: true
+          fail-on-empty-output: true
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          files: ${{ join(fromJSON(steps.convert-coverage.outputs.files), ',') }}
+          fail_ci_if_error: true
+
+  xcode_tests:
+    name: ${{ matrix.platform }} ${{ matrix.scheme }} Tests (Xcode ${{ matrix.xcode }})
+    runs-on: macos-13
+    strategy:
+      fail-fast: false
+      matrix:
+        xcode: ["15.0"]
+        platform: ["macOS", "iOS", "tvOS", "watchOS", "macCatalyst"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode ${{ matrix.xcode }}
+        run: sudo xcode-select --switch /Applications/Xcode_${{ matrix.xcode }}.app
+
+      - name: Install Mint
+        run: brew install mint
+
+      - name: Cache Mint
+        uses: actions/cache@v3
+        with:
+          path: ~/.mint
+          key: ${{ runner.os }}-mint-xcode_${{ matrix.xcode }}-${{ hashFiles('**/Mintfile') }}
+          restore-keys: |
+            ${{ runner.os }}-mint-xcode_${{ matrix.xcode }}
+
+      - run: mint bootstrap
+
+      - name: Cache SwiftPM
+        uses: actions/cache@v3
+        with:
+          path: .build
+          key: ${{ runner.os }}-xcode_${{ matrix.xcode }}-swiftpm-${{ hashFiles('**/Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-xcode_${{ matrix.xcode }}-swiftpm-
+
+      - name: Cache DerivedData
+        uses: actions/cache@v3
+        with:
+          path: ~/Library/Developer/Xcode/DerivedData
+          key: ${{ runner.os }}-${{ matrix.platform }}-derived_data-xcode_${{ matrix.xcode }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.platform }}-derived_data-
+
+      - name: Run Tests
+        run: |
+          set -o pipefail
+          mint run xcutils test ${{ matrix.platform }} --scheme CustomHashable-Package --enable-code-coverage | $(mint which xcbeautify)
+
+      - name: Convert coverage for Codecov
+        id: convert-coverage
+        uses: sersoft-gmbh/swift-coverage-action@v4
+        with:
+          fail-on-empty-output: true
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          files: ${{ join(fromJSON(steps.convert-coverage.outputs.files), ',') }}
+          fail_ci_if_error: true
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  linux_tests:
+    name: Swift ${{ matrix.swift }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    container:
+      image: swift:${{ matrix.swift }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ["ubuntu-latest"]
+        swift: ["5.9"]
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Cache SwiftPM
+        uses: actions/cache@v3
+        with:
+          path: .build
+          key: ${{ runner.os }}-xcode_${{ matrix.xcode }}-swiftpm-deps-${{ github.workspace }}-${{ hashFiles('Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-xcode_${{ matrix.xcode }}-swiftpm-deps-${{ github.workspace }}
+
+      - name: swift test
+        run: swift test

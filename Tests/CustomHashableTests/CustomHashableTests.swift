@@ -1,13 +1,14 @@
-import CustomHashable
-import CustomHashableMacros
 import SwiftSyntaxMacros
 import SwiftSyntaxMacrosTestSupport
 import XCTest
 
+#if canImport(CustomHashableMacros)
+import CustomHashableMacros
 private let testMacros: [String: Macro.Type] = [
     "CustomHashable": CustomHashable.self,
     "HashableKey": HashableKey.self,
 ]
+#endif
 
 final class CustomHashableTests: XCTestCase {
     func testCustomHashableStructWithExcludedProperty() {
@@ -56,7 +57,8 @@ final class CustomHashableTests: XCTestCase {
         XCTAssertNotEqual(value1.hashValue, value2.hashValue)
     }
 
-    func testTypeNotExplicitlyConformingToHashable() {
+    func testTypeNotExplicitlyConformingToHashable() throws {
+        #if canImport(CustomHashableMacros)
         assertMacroExpansion(
             """
             @CustomHashable
@@ -97,9 +99,13 @@ final class CustomHashableTests: XCTestCase {
             """,
             macros: testMacros
         )
+        #else
+        throw XCTSkip("Macros are only supported when running tests for the host platform")
+        #endif
     }
 
-    func testTypeWithoutAnyHashableKeys() {
+    func testTypeWithoutAnyHashableKeys() throws {
+        #if canImport(CustomHashableMacros)
         assertMacroExpansion(
             """
             @CustomHashable
@@ -123,9 +129,13 @@ final class CustomHashableTests: XCTestCase {
             """,
             macros: testMacros
         )
+        #else
+        throw XCTSkip("Macros are only supported when running tests for the host platform")
+        #endif
     }
 
-    func testTypeWithExplicitHashableConformation() {
+    func testTypeWithExplicitHashableConformation() throws {
+        #if canImport(CustomHashableMacros)
         assertMacroExpansion(
             """
             @CustomHashable
@@ -150,9 +160,13 @@ final class CustomHashableTests: XCTestCase {
             """,
             macros: testMacros
         )
+        #else
+        throw XCTSkip("Macros are only supported when running tests for the host platform")
+        #endif
     }
 
-    func testPublicType() {
+    func testPublicType() throws {
+        #if canImport(CustomHashableMacros)
         assertMacroExpansion(
             """
             @CustomHashable
@@ -177,9 +191,13 @@ final class CustomHashableTests: XCTestCase {
             """,
             macros: testMacros
         )
+        #else
+        throw XCTSkip("Macros are only supported when running tests for the host platform")
+        #endif
     }
 
-    func testExplicitlyInternalType() {
+    func testExplicitlyInternalType() throws {
+        #if canImport(CustomHashableMacros)
         assertMacroExpansion(
             """
             @CustomHashable
@@ -204,9 +222,13 @@ final class CustomHashableTests: XCTestCase {
             """,
             macros: testMacros
         )
+        #else
+        throw XCTSkip("Macros are only supported when running tests for the host platform")
+        #endif
     }
 
-    func testFilePrivateType() {
+    func testFilePrivateType() throws {
+        #if canImport(CustomHashableMacros)
         assertMacroExpansion(
             """
             @CustomHashable
@@ -231,9 +253,13 @@ final class CustomHashableTests: XCTestCase {
             """,
             macros: testMacros
         )
+        #else
+        throw XCTSkip("Macros are only supported when running tests for the host platform")
+        #endif
     }
 
-    func testPrivateType() {
+    func testPrivateType() throws {
+        #if canImport(CustomHashableMacros)
         assertMacroExpansion(
             """
             @CustomHashable
@@ -258,9 +284,13 @@ final class CustomHashableTests: XCTestCase {
             """,
             macros: testMacros
         )
+        #else
+        throw XCTSkip("Macros are only supported when running tests for the host platform")
+        #endif
     }
 
-    func testPublicFinalType() {
+    func testPublicFinalType() throws {
+        #if canImport(CustomHashableMacros)
         assertMacroExpansion(
             """
             @CustomHashable
@@ -285,86 +315,9 @@ final class CustomHashableTests: XCTestCase {
             """,
             macros: testMacros
         )
+        #else
+        throw XCTSkip("Macros are only supported when running tests for the host platform")
+        #endif
     }
 }
 
-@CustomHashable
-private struct CustomHashableStructWithExcludedProperty {
-    @HashableKey
-    let firstProperty: Int
-
-    @HashableKey
-    private let secondProperty: Int
-
-    let excludedProperty: Int
-
-    init(firstProperty: Int, secondProperty: Int, excludedProperty: Int) {
-        self.firstProperty = firstProperty
-        self.secondProperty = secondProperty
-        self.excludedProperty = excludedProperty
-    }
-}
-
-@CustomHashable
-public class CustomHashableClassWithPrivateProperty {
-    @HashableKey
-    let firstProperty: Int
-
-    @HashableKey
-    let secondProperty: Int
-
-    @HashableKey
-    private let privateProperty: Int
-
-    init(firstProperty: Int, secondProperty: Int, privateProperty: Int) {
-        self.firstProperty = firstProperty
-        self.secondProperty = secondProperty
-        self.privateProperty = privateProperty
-    }
-}
-
-/// A type that explicitly conforms to `Hashable`; the macro should not try to
-/// add conformance (but it should still add the implementation required).
-@CustomHashable
-public class TypeExplicitlyConformingToHashable: Hashable {}
-
-/// A type that includes multiple properties declared on the same line.
-///
-/// The macro supports this but using `assertMacroExpansion` raises an error:
-///
-/// _swift-syntax applies macros syntactically and there is no way to represent a variable declaration with multiple bindings that have accessors syntactically. While the compiler allows this expansion, swift-syntax cannot represent it and thus disallows it._
-@CustomHashable
-struct TypeWithMultipleVariablesOnSameLine {
-    @HashableKey
-    var hashablePropery1: String
-
-    @HashableKey
-    var hashablePropery2: String
-
-    @HashableKey
-    let hashablePropery3, hashablePropery4: String
-
-    var notHashablePropery: String
-}
-
-@CustomHashable
-fileprivate struct FilePrivateType {
-    @HashableKey
-    var hashablePropery1: String
-}
-
-@CustomHashable
-private struct PrivateType {
-    @HashableKey
-    var hashedProperty: String
-}
-
-@CustomHashable
-public final class PublicFinalType {
-    @HashableKey
-    var hashedProperty: String
-
-    init(hashedProperty: String) {
-        self.hashedProperty = hashedProperty
-    }
-}
