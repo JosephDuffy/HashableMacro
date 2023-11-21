@@ -1,8 +1,8 @@
-import CustomHashablePlugin
-import XCTest
 import CustomHashable
+import CustomHashableMacros
 import SwiftSyntaxMacros
 import SwiftSyntaxMacrosTestSupport
+import XCTest
 
 private let testMacros: [String: Macro.Type] = [
     "CustomHashable": CustomHashable.self,

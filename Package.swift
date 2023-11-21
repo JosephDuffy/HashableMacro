@@ -24,8 +24,14 @@ let package = Package(
     ),
   ],
   targets: [
+    .target(
+        name: "CustomHashable",
+        dependencies: [
+            "CustomHashableMacros",
+        ]
+    ),
     .macro(
-      name: "CustomHashablePlugin",
+      name: "CustomHashableMacros",
       dependencies: [
         .product(name: "SwiftDiagnostics", package: "swift-syntax"),
         .product(name: "SwiftSyntax", package: "swift-syntax"),
@@ -33,17 +39,11 @@ let package = Package(
         .product(name: "SwiftCompilerPlugin", package: "swift-syntax"),
       ]
     ),
-    .target(
-      name: "CustomHashable",
-      dependencies: [
-        "CustomHashablePlugin",
-      ]
-    ),
     .testTarget(
       name: "CustomHashableTests",
       dependencies: [
         "CustomHashable",
-        "CustomHashablePlugin",
+        "CustomHashableMacros",
         .product(name: "SwiftSyntaxMacros", package: "swift-syntax"),
         .product(name: "SwiftSyntaxMacrosTestSupport", package: "swift-syntax"),
       ]
