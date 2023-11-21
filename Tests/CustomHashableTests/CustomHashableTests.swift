@@ -11,6 +11,11 @@ private let testMacros: [String: Macro.Type] = [
 #endif
 
 final class CustomHashableTests: XCTestCase {
+    /// Test the usage of the `Hashable` API using a type decorated with the `@CustomHashable` macro
+    /// that has been expanded by the compiler to check that the expanded implementation is honoured
+    /// when compiled.
+    ///
+    /// See https://github.com/apple/swift/issues/66348
     func testCustomHashableStructWithExcludedProperty() {
         let value1 = CustomHashableStructWithExcludedProperty(firstProperty: 1, secondProperty: 2, excludedProperty: 3)
         let value2 = CustomHashableStructWithExcludedProperty(firstProperty: 1, secondProperty: 3, excludedProperty: 3)
