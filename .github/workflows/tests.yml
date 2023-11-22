@@ -46,7 +46,7 @@ jobs:
           fail_ci_if_error: true
 
   xcode_tests:
-    name: ${{ matrix.platform }} ${{ matrix.scheme }} Tests (Xcode ${{ matrix.xcode }})
+    name: ${{ matrix.platform }} Tests (Xcode ${{ matrix.xcode }})
     runs-on: macos-13
     strategy:
       fail-fast: false
