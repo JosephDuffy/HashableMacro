@@ -120,7 +120,7 @@ jobs:
         swift: ["5.9.0", "5.9.2"]
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Cache SwiftPM
         uses: actions/cache@v3
