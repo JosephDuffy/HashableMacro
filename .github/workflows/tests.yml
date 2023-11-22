@@ -132,3 +132,16 @@ jobs:
 
       - name: swift test
         run: swift test
+
+  windows_tests:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: compnerd/gha-setup-swift@main
+        with:
+          branch: "swift-5.9-release"
+          tag: "5.9.2-RELEASE"
+
+      - name: swift test
+        run: swift test
