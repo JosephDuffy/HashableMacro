@@ -3,6 +3,7 @@ import SwiftDiagnostics
 import SwiftSyntax
 import SwiftSyntaxMacros
 
+@available(swift 5.9.2)
 public struct CustomHashable: ExtensionMacro, MemberMacro {
     public static func expansion(
         of node: AttributeSyntax,

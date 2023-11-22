@@ -2,6 +2,7 @@ import SwiftSyntaxMacros
 import SwiftSyntaxMacrosTestSupport
 import XCTest
 
+#if swift(>=5.9.2)
 #if canImport(CustomHashableMacros)
 import CustomHashableMacros
 private let testMacros: [String: Macro.Type] = [
@@ -325,4 +326,4 @@ final class CustomHashableTests: XCTestCase {
         #endif
     }
 }
-
+#endif

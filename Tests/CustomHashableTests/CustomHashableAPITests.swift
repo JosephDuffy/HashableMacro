@@ -4,6 +4,7 @@
 // https://github.com/apple/swift/issues/66348
 import CustomHashable
 
+#if swift(>=5.9.2)
 @CustomHashable
 struct CustomHashableStructWithExcludedProperty {
     @HashableKey
@@ -84,3 +85,4 @@ public final class PublicFinalType {
         self.hashedProperty = hashedProperty
     }
 }
+#endif

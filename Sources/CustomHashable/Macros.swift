@@ -1,3 +1,4 @@
+@available(swift 5.9.2)
 @attached(member, names: named(hash), named(==))
 @attached(extension, conformances: Hashable)
 public macro CustomHashable() = #externalMacro(module: "CustomHashableMacros", type: "CustomHashable")
