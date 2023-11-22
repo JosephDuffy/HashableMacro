@@ -79,10 +79,6 @@ private struct PrivateType {
 @CustomHashable
 public final class PublicFinalType {
     @HashableKey
-    var hashedProperty: String
-
-    init(hashedProperty: String) {
-        self.hashedProperty = hashedProperty
-    }
+    var hashedProperty: String = ""
 }
 #endif
