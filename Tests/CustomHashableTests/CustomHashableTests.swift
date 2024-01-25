@@ -5,6 +5,7 @@ import XCTest
 #if swift(>=5.9.2)
 #if canImport(CustomHashableMacros)
 import CustomHashableMacros
+
 private let testMacros: [String: Macro.Type] = [
     "CustomHashable": CustomHashable.self,
     "HashableKey": HashableKey.self,
@@ -96,7 +97,7 @@ final class CustomHashableTests: XCTestCase {
                     hasher.combine(self.hashablePropery3)
                 }
             
-                static func == (lhs: TypeNotExplicitlyConformingToHashable, rhs: TypeNotExplicitlyConformingToHashable) -> Bool {
+                static func ==(lhs: TypeNotExplicitlyConformingToHashable, rhs: TypeNotExplicitlyConformingToHashable) -> Bool {
                     return lhs.hashablePropery1 == rhs.hashablePropery1
                         && lhs.hashablePropery2 == rhs.hashablePropery2
                         && lhs.hashablePropery3 == rhs.hashablePropery3
@@ -125,10 +126,9 @@ final class CustomHashableTests: XCTestCase {
                 var notHashedProperty: String
 
                 func hash(into hasher: inout Hasher) {
-
                 }
 
-                static func == (lhs: TypeWithoutHashableKeys, rhs: TypeWithoutHashableKeys) -> Bool {
+                static func ==(lhs: TypeWithoutHashableKeys, rhs: TypeWithoutHashableKeys) -> Bool {
                     return true
                 }
             }
@@ -159,7 +159,7 @@ final class CustomHashableTests: XCTestCase {
                     hasher.combine(self.hashedProperty)
                 }
 
-                static func == (lhs: TypeWithExplicitHashableConformation, rhs: TypeWithExplicitHashableConformation) -> Bool {
+                static func ==(lhs: TypeWithExplicitHashableConformation, rhs: TypeWithExplicitHashableConformation) -> Bool {
                     return lhs.hashedProperty == rhs.hashedProperty
                 }
             }
@@ -190,7 +190,7 @@ final class CustomHashableTests: XCTestCase {
                     hasher.combine(self.hashedProperty)
                 }
 
-                public static func == (lhs: PublicType, rhs: PublicType) -> Bool {
+                public static func ==(lhs: PublicType, rhs: PublicType) -> Bool {
                     return lhs.hashedProperty == rhs.hashedProperty
                 }
             }
@@ -221,7 +221,7 @@ final class CustomHashableTests: XCTestCase {
                     hasher.combine(self.hashedProperty)
                 }
 
-                internal static func == (lhs: ExplicitlyInternalType, rhs: ExplicitlyInternalType) -> Bool {
+                internal static func ==(lhs: ExplicitlyInternalType, rhs: ExplicitlyInternalType) -> Bool {
                     return lhs.hashedProperty == rhs.hashedProperty
                 }
             }
@@ -252,7 +252,7 @@ final class CustomHashableTests: XCTestCase {
                     hasher.combine(self.hashedProperty)
                 }
 
-                fileprivate static func == (lhs: FilePrivateType, rhs: FilePrivateType) -> Bool {
+                fileprivate static func ==(lhs: FilePrivateType, rhs: FilePrivateType) -> Bool {
                     return lhs.hashedProperty == rhs.hashedProperty
                 }
             }
@@ -283,7 +283,7 @@ final class CustomHashableTests: XCTestCase {
                     hasher.combine(self.hashedProperty)
                 }
 
-                static func == (lhs: PrivateType, rhs: PrivateType) -> Bool {
+                static func ==(lhs: PrivateType, rhs: PrivateType) -> Bool {
                     return lhs.hashedProperty == rhs.hashedProperty
                 }
             }
@@ -314,7 +314,7 @@ final class CustomHashableTests: XCTestCase {
                     hasher.combine(self.hashedProperty)
                 }
 
-                public static func == (lhs: PublicFinalType, rhs: PublicFinalType) -> Bool {
+                public static func ==(lhs: PublicFinalType, rhs: PublicFinalType) -> Bool {
                     return lhs.hashedProperty == rhs.hashedProperty
                 }
             }

@@ -40,6 +40,17 @@ public struct CustomHashable: ExtensionMacro, MemberMacro {
         providingMembersOf declaration: some DeclGroupSyntax,
         in context: some MacroExpansionContext
     ) throws -> [DeclSyntax] {
+        /*
+         All example code and other macros I've seen build their output using
+         strings that are then parsed by `DeclSyntax`. This is implemented using
+         types from SwiftSyntax directly, skipping the text parsing step. I
+         assume that this is faster, although it's likely negligible.
+
+         I implemented it this way primarily to learn more about the types that
+         SwiftSyntax exposes. One nice upside to this is that if it compiles
+         then there's more of a chance that it will be valid than arbitrary
+         strings concatenated together.
+         */
         guard let namedDeclaration = declaration as? NamedDeclSyntax else {
             throw InvalidDeclarationTypeError()
         }
@@ -90,103 +101,84 @@ public struct CustomHashable: ExtensionMacro, MemberMacro {
             parameterClause: FunctionParameterClauseSyntax(
                 parameters: [
                     FunctionParameterSyntax(
-                        firstName: TokenSyntax.identifier("lhs"),
+                        firstName: .identifier("lhs"),
                         type: TypeSyntax(stringLiteral: namedDeclaration.name.text),
-                        trailingComma: .commaToken(trailingTrivia: .space)
+                        trailingComma: .commaToken()
                     ),
                     FunctionParameterSyntax(
-                        firstName: TokenSyntax.identifier("rhs"),
+                        firstName: .identifier("rhs"),
                         type: TypeSyntax(stringLiteral: namedDeclaration.name.text)
                     ),
-                ],
-                rightParen: TokenSyntax.rightParenToken(trailingTrivia: .space)
+                ]
             ),
             returnClause: ReturnClauseSyntax(
-                arrow: .arrowToken(trailingTrivia: .space),
-                type: IdentifierTypeSyntax(name: .identifier("Bool")),
-                trailingTrivia: .space
+                type: IdentifierTypeSyntax(name: .identifier("Bool"))
             )
         )
 
-        let equalsBody = CodeBlockSyntax(
-            leftBrace: .leftBraceToken(trailingTrivia: .newline),
-            statements: CodeBlockItemListSyntax(itemsBuilder: {
-                CodeBlockItemSyntax(
-                    item: CodeBlockItemSyntax.Item(
-                        ReturnStmtSyntax(trailingTrivia: .space)
+        var comparisons: InfixOperatorExprSyntax?
+
+        for propertyToken in propertyNames {
+            let comparison = InfixOperatorExprSyntax(
+                leftOperand: MemberAccessExprSyntax(
+                    base: DeclReferenceExprSyntax(
+                        baseName: .identifier("lhs")
+                    ),
+                    declName: DeclReferenceExprSyntax(
+                        baseName: propertyToken
+                    )
+                ),
+                operator: BinaryOperatorExprSyntax(
+                    operator: .binaryOperator("==")
+                ),
+                rightOperand: MemberAccessExprSyntax(
+                    base: DeclReferenceExprSyntax(
+                        baseName: .identifier("rhs")
+                    ),
+                    declName: DeclReferenceExprSyntax(
+                        baseName: propertyToken
                     )
                 )
+            )
 
-                if propertyNames.isEmpty {
-                    CodeBlockItemSyntax(
-                        item: CodeBlockItemSyntax.Item(
-                            BooleanLiteralExprSyntax(booleanLiteral: true)
-                        )
+            if let existingComparisons = comparisons {
+                comparisons = InfixOperatorExprSyntax(
+                    leftOperand: existingComparisons,
+                    operator: BinaryOperatorExprSyntax(
+                        leadingTrivia: .newline.appending(Trivia.spaces(8)),
+                        operator: .binaryOperator("&&")
+                    ),
+                    rightOperand: comparison
+                )
+            } else {
+                comparisons = comparison
+            }
+        }
+
+        let equalsBody = CodeBlockSyntax(
+            statements: CodeBlockItemListSyntax(itemsBuilder: {
+                if let comparisons {
+                    ReturnStmtSyntax(
+                        leadingTrivia: .spaces(4),
+                        expression: comparisons
+                    )
+                } else {
+                    ReturnStmtSyntax(
+                        leadingTrivia: .spaces(4),
+                        expression: BooleanLiteralExprSyntax(booleanLiteral: true)
                     )
                 }
-
-                for (index, propertyToken) in propertyNames.enumerated() {
-                    CodeBlockItemSyntax(
-                        item: CodeBlockItemSyntax.Item(
-                            SequenceExprSyntax(
-                                elementsBuilder: {
-                                    MemberAccessExprSyntax(
-                                        base: DeclReferenceExprSyntax(
-                                            baseName: .identifier("lhs")
-                                        ),
-                                        declName: DeclReferenceExprSyntax(
-                                            baseName: propertyToken
-                                        )
-                                    )
-                                }
-                            )
-                        )
-                    )
-
-                    BinaryOperatorExprSyntax(
-                        leadingTrivia: .space,
-                        operator: .binaryOperator("=="),
-                        trailingTrivia: .space
-                    )
-
-                    CodeBlockItemSyntax(
-                        item: CodeBlockItemSyntax.Item(
-                            SequenceExprSyntax(
-                                elementsBuilder: {
-                                    MemberAccessExprSyntax(
-                                        base: DeclReferenceExprSyntax(
-                                            baseName: .identifier("rhs")
-                                        ),
-                                        declName: DeclReferenceExprSyntax(
-                                            baseName: propertyToken
-                                        )
-                                    )
-                                }
-                            )
-                        )
-                    )
-
-                    if index + 1 != propertyNames.count {
-                        BinaryOperatorExprSyntax(
-                            leadingTrivia: .newline.appending(Trivia.spaces(4)),
-                            operator: .binaryOperator("&&"),
-                            trailingTrivia: .space
-                        )
-                    }
-                }
-            }),
-            rightBrace: .rightBraceToken(leadingTrivia: .newline)
+            })
         )
 
         var equalsFunctionModifiers = baseModifiers
         equalsFunctionModifiers.append(
-            DeclModifierSyntax(name: .keyword(.static, trailingTrivia: .space))
+            DeclModifierSyntax(name: .keyword(.static))
         )
 
         let equalsFunction = FunctionDeclSyntax(
             modifiers: equalsFunctionModifiers,
-            funcKeyword: .keyword(.func, trailingTrivia: .space),
-            name: TokenSyntax.identifier("=="),
+            name: .identifier("=="),
             signature: equalsFunctionSignature,
             body: equalsBody
         )
@@ -195,54 +187,48 @@ public struct CustomHashable: ExtensionMacro, MemberMacro {
             parameterClause: FunctionParameterClauseSyntax(
                 parameters: [
                     FunctionParameterSyntax(
-                        firstName: TokenSyntax.identifier("into", trailingTrivia: .space),
-                        secondName: TokenSyntax.identifier("hasher"),
+                        firstName: .identifier("into"),
+                        secondName: .identifier("hasher"),
                         type: AttributedTypeSyntax(
-                            specifier: .keyword(.inout, trailingTrivia: .space),
+                            specifier: .keyword(.inout),
                             baseType: TypeSyntax(stringLiteral: "Hasher")
                         )
                     ),
-                ],
-                rightParen: TokenSyntax.rightParenToken(trailingTrivia: .space)
+                ]
             )
         )
 
         let hashFunctionBody = CodeBlockSyntax(
-            leftBrace: .leftBraceToken(trailingTrivia: .newline),
             statements: CodeBlockItemListSyntax(itemsBuilder: {
                 for propertyToken in propertyNames {
                     FunctionCallExprSyntax(
                         callee: MemberAccessExprSyntax(
                             base: DeclReferenceExprSyntax(baseName: "hasher"),
-                            period: .periodToken(),
                             name: .identifier("combine")
                         ),
                         argumentList: {
                             LabeledExprSyntax(
                                 expression: MemberAccessExprSyntax(
                                     base: DeclReferenceExprSyntax(baseName: .keyword(.`self`)),
-                                    period: .periodToken(),
                                     name: propertyToken
                                 )
                             )
                         }
                     )
                 }
-            }),
-            rightBrace: .rightBraceToken(leadingTrivia: .newline)
+            })
         )
 
         let hashFunction = FunctionDeclSyntax(
             modifiers: baseModifiers,
-            funcKeyword: .keyword(.func, trailingTrivia: .space),
             name: TokenSyntax.identifier("hash"),
             signature: hashFunctionSignature,
             body: hashFunctionBody
         )
 
         return [
-            "\(hashFunction)",
-            "\(equalsFunction)",
+            DeclSyntax(hashFunction),
+            DeclSyntax(equalsFunction),
         ]
     }
 }
