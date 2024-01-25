@@ -81,4 +81,10 @@ public final class PublicFinalType {
     @HashableKey
     var hashedProperty: String = ""
 }
+
+@CustomHashable
+struct ExplicitEquatableStruct: Equatable {
+    @HashableKey
+    var hashedProperty: String = ""
+}
 #endif

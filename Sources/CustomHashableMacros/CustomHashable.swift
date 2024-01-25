@@ -12,27 +12,27 @@ public struct CustomHashable: ExtensionMacro, MemberMacro {
         conformingTo protocols: [TypeSyntax],
         in context: some MacroExpansionContext
     ) throws -> [ExtensionDeclSyntax] {
-        guard let hashableType = protocols.first else {
-            // Hashable conformance has been explicitly added.
-            return []
+        try protocols.map { protocolType in
+            switch protocolType.trimmedDescription {
+            case "Hashable", "Equatable":
+                return ExtensionDeclSyntax(
+                    extendedType: type,
+                    inheritanceClause: InheritanceClauseSyntax(
+                        inheritedTypes: InheritedTypeListSyntax(itemsBuilder: {
+                            InheritedTypeSyntax(
+                                type: protocolType
+                            )
+                        })
+                    ),
+                    memberBlock: MemberBlockSyntax(members: "")
+                )
+            default:
+                throw ErrorDiagnosticMessage(
+                    id: "unknown-protocol",
+                    message: "Unknown protocol: '\(protocolType.trimmedDescription)'"
+                )
+            }
         }
-
-        assert("\(hashableType.trimmed)" == "Hashable", "Only expected to add Hashable conformance")
-        assert(protocols.count == 1, "Only expected to add conformance to a single protocol")
-
-        return [
-            ExtensionDeclSyntax(
-                extendedType: type,
-                inheritanceClause: InheritanceClauseSyntax(
-                    inheritedTypes: InheritedTypeListSyntax(itemsBuilder: {
-                        InheritedTypeSyntax(
-                            type: hashableType
-                        )
-                    })
-                ),
-                memberBlock: MemberBlockSyntax(members: "")
-            )
-        ]
     }
 
     public static func expansion(
