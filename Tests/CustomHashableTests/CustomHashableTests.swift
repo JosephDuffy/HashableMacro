@@ -80,6 +80,8 @@ final class CustomHashableTests: XCTestCase {
                 let hashablePropery3: String
 
                 var notHashablePropery: String
+
+                func extraFunction() {}
             }
             """,
             expandedSource: """
@@ -90,6 +92,8 @@ final class CustomHashableTests: XCTestCase {
                 let hashablePropery3: String
 
                 var notHashablePropery: String
+
+                func extraFunction() {}
 
                 func hash(into hasher: inout Hasher) {
                     hasher.combine(self.hashablePropery1)
