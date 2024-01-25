@@ -1,4 +1,4 @@
-// swift-tools-version:5.9
+// swift-tools-version: 5.9
 import CompilerPluginSupport
 import PackageDescription
 
@@ -20,12 +20,18 @@ let package = Package(
   dependencies: [
     .package(
       url: "https://github.com/apple/swift-syntax.git",
-      from: "509.0.0-swift-5.9-DEVELOPMENT-SNAPSHOT-2023-04-25-b"
+      from: "509.1.0"
     ),
   ],
   targets: [
+    .target(
+        name: "CustomHashable",
+        dependencies: [
+            "CustomHashableMacros",
+        ]
+    ),
     .macro(
-      name: "CustomHashablePlugin",
+      name: "CustomHashableMacros",
       dependencies: [
         .product(name: "SwiftDiagnostics", package: "swift-syntax"),
         .product(name: "SwiftSyntax", package: "swift-syntax"),
@@ -33,15 +39,14 @@ let package = Package(
         .product(name: "SwiftCompilerPlugin", package: "swift-syntax"),
       ]
     ),
-    .target(
-      name: "CustomHashable",
-      dependencies: [
-        "CustomHashablePlugin",
-      ]
-    ),
     .testTarget(
       name: "CustomHashableTests",
-      dependencies: ["CustomHashable"]
+      dependencies: [
+        "CustomHashable",
+        "CustomHashableMacros",
+        .product(name: "SwiftSyntaxMacros", package: "swift-syntax"),
+        .product(name: "SwiftSyntaxMacrosTestSupport", package: "swift-syntax"),
+      ]
     ),
   ]
 )
