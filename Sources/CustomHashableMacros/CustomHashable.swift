@@ -55,6 +55,27 @@ public struct CustomHashable: ExtensionMacro, MemberMacro {
             throw InvalidDeclarationTypeError()
         }
 
+        var finalHashInto = true
+
+        if let arguments = node.arguments?.as(LabeledExprListSyntax.self) {
+            for argument in arguments {
+                switch argument.label?.trimmed.text {
+                case "finalHashInto":
+                    guard let expression = argument.expression.as(BooleanLiteralExprSyntax.self) else { continue }
+                    switch expression.literal.tokenKind {
+                    case .keyword(.true):
+                        finalHashInto = true
+                    case .keyword(.false):
+                        finalHashInto = false
+                    default:
+                        break
+                    }
+                default:
+                    break
+                }
+            }
+        }
+
         let baseModifiers = declaration.modifiers.filter({ modifier in
             switch (modifier.name.tokenKind) {
             case .keyword(.public):
@@ -183,6 +204,13 @@ public struct CustomHashable: ExtensionMacro, MemberMacro {
             body: equalsBody
         )
 
+        var hashFunctionModifiers = baseModifiers
+        if finalHashInto, declaration.is(ClassDeclSyntax.self) {
+            hashFunctionModifiers.append(
+                DeclModifierSyntax(name: .keyword(.final))
+            )
+        }
+
         let hashFunctionSignature = FunctionSignatureSyntax(
             parameterClause: FunctionParameterClauseSyntax(
                 parameters: [
@@ -220,8 +248,8 @@ public struct CustomHashable: ExtensionMacro, MemberMacro {
         )
 
         let hashFunction = FunctionDeclSyntax(
-            modifiers: baseModifiers,
-            name: TokenSyntax.identifier("hash"),
+            modifiers: hashFunctionModifiers,
+            name: .identifier("hash"),
             signature: hashFunctionSignature,
             body: hashFunctionBody
         )

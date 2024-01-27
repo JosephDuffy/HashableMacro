@@ -314,7 +314,7 @@ final class CustomHashableTests: XCTestCase {
             public final class PublicFinalType {
                 var hashedProperty: String
 
-                public func hash(into hasher: inout Hasher) {
+                public final func hash(into hasher: inout Hasher) {
                     hasher.combine(self.hashedProperty)
                 }
 
