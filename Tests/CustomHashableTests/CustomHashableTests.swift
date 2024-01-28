@@ -73,6 +73,7 @@ final class CustomHashableTests: XCTestCase {
             nsObjectSubclassProperty: "123-different",
             nsObjectSubclassSubclassProperty: "456-different"
         )
+        let value5 = NSObjectSubclass(nsObjectSubclassProperty: "123")
 
         XCTAssertEqual(value1, value1)
         XCTAssertEqual(value1.hashValue, value1.hashValue)
@@ -82,18 +83,30 @@ final class CustomHashableTests: XCTestCase {
         XCTAssertEqual(value3.hashValue, value3.hashValue)
         XCTAssertEqual(value4, value4)
         XCTAssertEqual(value4.hashValue, value4.hashValue)
+        XCTAssertEqual(value5, value5)
+        XCTAssertEqual(value5.hashValue, value5.hashValue)
         XCTAssertNotEqual(value1, value2)
         XCTAssertNotEqual(value1, value3)
         XCTAssertNotEqual(value1, value4)
+        XCTAssertNotEqual(value1, value5)
         XCTAssertNotEqual(value1.hashValue, value2.hashValue)
         XCTAssertNotEqual(value1.hashValue, value3.hashValue)
         XCTAssertNotEqual(value1.hashValue, value4.hashValue)
+        XCTAssertNotEqual(value1.hashValue, value5.hashValue)
         XCTAssertNotEqual(value2, value3)
         XCTAssertNotEqual(value2, value4)
+        XCTAssertNotEqual(value2, value5)
         XCTAssertNotEqual(value2.hashValue, value3.hashValue)
         XCTAssertNotEqual(value2.hashValue, value4.hashValue)
+        XCTAssertNotEqual(value2.hashValue, value5.hashValue)
         XCTAssertNotEqual(value3, value4)
+        XCTAssertNotEqual(value3, value5)
         XCTAssertNotEqual(value3.hashValue, value4.hashValue)
+        XCTAssertNotEqual(value3.hashValue, value5.hashValue)
+        XCTAssertNotEqual(value5, value1)
+        XCTAssertNotEqual(value5, value2)
+        XCTAssertNotEqual(value5, value3)
+        XCTAssertNotEqual(value5, value4)
         #else
         throw XCTSkip("NSObject detection is only possible when ObjectiveC is available")
         #endif
