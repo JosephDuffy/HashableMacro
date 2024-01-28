@@ -20,7 +20,11 @@ public struct CustomHashable: ExtensionMacro, MemberMacro {
         // used to check whether the compiler asks for it to be added. If the
         // macro is asked to add `NSObjectProtocol` conformance then we know
         // this is not an `NSObject` subclass.
+        #if canImport(ObjectiveC)
         var isNSObjectSubclass = true
+        #else
+        let isNSObjectSubclass = false
+        #endif
 
         var protocolExtensions: [ExtensionDeclSyntax] = []
 
@@ -39,8 +43,10 @@ public struct CustomHashable: ExtensionMacro, MemberMacro {
                     memberBlock: MemberBlockSyntax(members: "")
                 )
                 protocolExtensions.append(protocolExtension)
+            #if canImport(ObjectiveC)
             case "NSObjectProtocol":
                 isNSObjectSubclass = false
+            #endif
             default:
                 throw ErrorDiagnosticMessage(
                     id: "unknown-protocol",
