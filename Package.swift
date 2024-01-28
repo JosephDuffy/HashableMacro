@@ -28,7 +28,8 @@ let package = Package(
         name: "CustomHashable",
         dependencies: [
             "CustomHashableMacros",
-        ]
+        ],
+        swiftSettings: [.enableExperimentalFeature("StrictConcurrency")]
     ),
     .macro(
       name: "CustomHashableMacros",
@@ -37,7 +38,8 @@ let package = Package(
         .product(name: "SwiftSyntax", package: "swift-syntax"),
         .product(name: "SwiftSyntaxMacros", package: "swift-syntax"),
         .product(name: "SwiftCompilerPlugin", package: "swift-syntax"),
-      ]
+      ],
+      swiftSettings: [.enableExperimentalFeature("StrictConcurrency")]
     ),
     .testTarget(
       name: "CustomHashableTests",
@@ -46,7 +48,8 @@ let package = Package(
         "CustomHashableMacros",
         .product(name: "SwiftSyntaxMacros", package: "swift-syntax"),
         .product(name: "SwiftSyntaxMacrosTestSupport", package: "swift-syntax"),
-      ]
+      ],
+      swiftSettings: [.enableExperimentalFeature("StrictConcurrency")]
     ),
   ]
 )
