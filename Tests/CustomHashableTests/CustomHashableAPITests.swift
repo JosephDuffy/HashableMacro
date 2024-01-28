@@ -87,4 +87,42 @@ struct ExplicitEquatableStruct: Equatable {
     @HashableKey
     var hashedProperty: String = ""
 }
+
+@CustomHashable
+struct CustomEqualityStruct {
+    @HashableKey
+    var hashedProperty: String = ""
+}
+
+#if canImport(ObjectiveC)
+import ObjectiveC
+
+@CustomHashable
+class NSObjectSubclassWithoutExtraProperties: NSObject {}
+
+@CustomHashable
+class NSObjectSubclass: NSObject {
+    @HashableKey
+    var nsObjectSubclassProperty: String
+    
+    init(nsObjectSubclassProperty: String) {
+        self.nsObjectSubclassProperty = nsObjectSubclassProperty
+    }
+}
+
+@CustomHashable
+class NSObjectSubclassSubclass: NSObjectSubclass {
+    @HashableKey
+    var nsObjectSubclassSubclassProperty: String
+
+    init(
+        nsObjectSubclassProperty: String,
+        nsObjectSubclassSubclassProperty: String
+    ) {
+        self.nsObjectSubclassSubclassProperty = nsObjectSubclassSubclassProperty
+
+        super.init(nsObjectSubclassProperty: nsObjectSubclassProperty)
+    }
+}
+#endif
 #endif

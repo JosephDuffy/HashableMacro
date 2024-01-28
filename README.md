@@ -28,15 +28,15 @@ All decorated properties are included in both the `==` and `hash(into:)` impleme
 
 > Two instances that are equal must feed the same values to `Hasher` in `hash(into:)`, in the same order.
 
+## `NSObject` Support
+
+When a type inherits from `NSObject` it should override `hash` and `isEqual(_:)`, not `hash(into:)` and `==`. `CustomHashable` detects when it is attached to an `NSObject` subclass (specifically, a type implementing `NSObjectProtocol`) and will provide the `hash` property and `isEqual(_:)` function instead. 
+
 ## `final` `hash(into:)` Function
 
 When the `CustomHashable` macro is added to a class the generated `hash(into:)` function is marked `final`. This is because subclasses cannot override `==` and Swift will always use the `==` implementation from the superclass.
 
-In general non-final `Hashable` classes do not make sense and can easily break the contract of `Equatable`:
-
-> any two instances that compare equally can be used interchangeably in any code that depends on their values
-
-It is possible to work around these issues but they require extra care and sometimes per-class affordances. This is not the intention of this `CustomHashable`.
+It is possible to work around these issues but they require extra care and sometimes per-class affordances. This is not the intention of `CustomHashable`.
 
 ## License
 
