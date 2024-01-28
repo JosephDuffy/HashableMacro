@@ -1,4 +1,4 @@
-#if swift(>=5.9.2)
+#if compiler(>=5.9.2)
 import SwiftSyntaxMacros
 import SwiftSyntaxMacrosTestSupport
 import XCTest
