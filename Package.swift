@@ -45,6 +45,7 @@ let package = Package(
       name: "CustomHashableTests",
       dependencies: [
         "CustomHashable",
+        "CustomHashableMacros", // Required for tests to compile on Swift < 5.9.2
         .product(name: "SwiftSyntaxMacros", package: "swift-syntax"),
         .product(name: "SwiftSyntaxMacrosTestSupport", package: "swift-syntax"),
       ],
