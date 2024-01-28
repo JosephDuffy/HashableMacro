@@ -1,3 +1,4 @@
+#if swift(>=5.9.2)
 import SwiftSyntaxMacros
 import SwiftSyntaxMacrosTestSupport
 import XCTest
@@ -54,7 +55,8 @@ final class CustomHashableTests: XCTestCase {
         XCTAssertNotEqual(value1.hashValue, value2.hashValue)
     }
 
-    func testNSObjectSubclassing() {
+    func testNSObjectSubclassing() throws {
+        #if canImport(ObjectiveC)
         let value1 = NSObjectSubclassSubclass(
             nsObjectSubclassProperty: "123",
             nsObjectSubclassSubclassProperty: "456"
@@ -92,6 +94,9 @@ final class CustomHashableTests: XCTestCase {
         XCTAssertNotEqual(value2.hashValue, value4.hashValue)
         XCTAssertNotEqual(value3, value4)
         XCTAssertNotEqual(value3.hashValue, value4.hashValue)
+        #else
+        throw XCTSkip("NSObject detection is only possible when ObjectiveC is available")
+        #endif
     }
 
     // `assertMacroExpansion` used to be used here but the expansion is added in
@@ -99,3 +104,4 @@ final class CustomHashableTests: XCTestCase {
     // The test library does not pass any protocols to the macro function, which
     // is interpreted as the macro being attached to an `NSObject` subclass.
 }
+#endif
