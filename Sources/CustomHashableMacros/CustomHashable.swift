@@ -22,8 +22,6 @@ public struct CustomHashable: ExtensionMacro, MemberMacro {
         // this is not an `NSObject` subclass.
         #if canImport(ObjectiveC)
         var isNSObjectSubclass = true
-        #else
-        let isNSObjectSubclass = false
         #endif
 
         var protocolExtensions: [ExtensionDeclSyntax] = []
@@ -55,15 +53,60 @@ public struct CustomHashable: ExtensionMacro, MemberMacro {
             }
         }
 
+        #if canImport(ObjectiveC)
         if isNSObjectSubclass {
+            guard let namedDeclaration = declaration as? ClassDeclSyntax else {
+                throw InvalidDeclarationTypeError()
+            }
+
+            var nsObjectSubclassBehaviour: NSObjectSubclassBehaviour = .callSuperUnlessDirectSubclass
+
+            if let arguments = node.arguments?.as(LabeledExprListSyntax.self) {
+                for argument in arguments {
+                    switch argument.label?.trimmedDescription {
+                    case "nsObjectSubclassBehaviour":
+                        guard let expression = argument.expression.as(MemberAccessExprSyntax.self) else {
+                            throw ErrorDiagnosticMessage(
+                                id: "unknown-nsObjectSubclassBehaviour-type",
+                                message: "'nsObjectSubclassBehaviour' parameter was not of the expected type"
+                            )
+                        }
+                        switch expression.declName.baseName.tokenKind {
+                        case .identifier("neverCallSuper"):
+                            nsObjectSubclassBehaviour = .neverCallSuper
+                        case .identifier("callSuperUnlessDirectSubclass"):
+                            nsObjectSubclassBehaviour = .callSuperUnlessDirectSubclass
+                        case .identifier("alwaysCallSuper"):
+                            nsObjectSubclassBehaviour = .alwaysCallSuper
+                        default:
+                            throw ErrorDiagnosticMessage(id: "unknown-nsObjectSubclassBehaviour-name", message: "'\(expression.declName.baseName)' is not a known value for `NSObjectSubclassBehaviour`; \(expression.declName.baseName.debugDescription))")
+                        }
+                    default:
+                        break
+                    }
+                }
+            }
+
+            let doIncorporateSuper: Bool
+
+            switch nsObjectSubclassBehaviour {
+            case .neverCallSuper:
+                doIncorporateSuper = false
+            case .callSuperUnlessDirectSubclass:
+                doIncorporateSuper = namedDeclaration.inheritanceClause?.inheritedTypes.first?.type.trimmedDescription != "NSObject"
+            case .alwaysCallSuper:
+                doIncorporateSuper = true
+            }
+
             let hashPropertyExtension = ExtensionDeclSyntax(
                 extendedType: type,
                 memberBlock: MemberBlockSyntax(
-                    members: try MemberBlockItemListSyntax(itemsBuilder: {
-                        try expansionForHashProperty(
+                    members: MemberBlockItemListSyntax(itemsBuilder: {
+                        expansionForHashProperty(
                             of: node,
                             providingMembersOf: declaration,
-                            in: context
+                            in: context,
+                            doIncorporateSuper: doIncorporateSuper
                         )
                     })
                 )
@@ -71,11 +114,12 @@ public struct CustomHashable: ExtensionMacro, MemberMacro {
             let isEqualImplementationExtension = ExtensionDeclSyntax(
                 extendedType: type,
                 memberBlock: MemberBlockSyntax(
-                    members: try MemberBlockItemListSyntax(itemsBuilder: {
-                        try expansionForIsEqual(
+                    members: MemberBlockItemListSyntax(itemsBuilder: {
+                        expansionForIsEqual(
                             of: node,
                             providingMembersOf: declaration,
-                            in: context
+                            in: context,
+                            doIncorporateSuper: doIncorporateSuper
                         )
                     })
                 )
@@ -86,8 +130,8 @@ public struct CustomHashable: ExtensionMacro, MemberMacro {
             let hashableImplementationExtension = ExtensionDeclSyntax(
                 extendedType: type,
                 memberBlock: MemberBlockSyntax(
-                    members: try MemberBlockItemListSyntax(itemsBuilder: {
-                        try expansionForHashable(
+                    members: MemberBlockItemListSyntax(itemsBuilder: {
+                        expansionForHashable(
                             of: node,
                             providingMembersOf: declaration,
                             in: context
@@ -110,6 +154,34 @@ public struct CustomHashable: ExtensionMacro, MemberMacro {
             protocolExtensions.append(hashableImplementationExtension)
             protocolExtensions.append(equatableImplementationExtension)
         }
+        #else
+        let hashableImplementationExtension = ExtensionDeclSyntax(
+            extendedType: type,
+            memberBlock: MemberBlockSyntax(
+                members: MemberBlockItemListSyntax(itemsBuilder: {
+                    expansionForHashable(
+                        of: node,
+                        providingMembersOf: declaration,
+                        in: context
+                    )
+                })
+            )
+        )
+        let equatableImplementationExtension = ExtensionDeclSyntax(
+            extendedType: type,
+            memberBlock: MemberBlockSyntax(
+                members: try MemberBlockItemListSyntax(itemsBuilder: {
+                    try expansionForEquals(
+                        of: node,
+                        providingMembersOf: declaration,
+                        in: context
+                    )
+                })
+            )
+        )
+        protocolExtensions.append(hashableImplementationExtension)
+        protocolExtensions.append(equatableImplementationExtension)
+        #endif
 
         return protocolExtensions
     }
@@ -118,7 +190,7 @@ public struct CustomHashable: ExtensionMacro, MemberMacro {
         of node: AttributeSyntax,
         providingMembersOf declaration: some DeclGroupSyntax,
         in context: some MacroExpansionContext
-    ) throws -> DeclSyntax {
+    ) -> DeclSyntax {
         var finalHashInto = true
 
         if let arguments = node.arguments?.as(LabeledExprListSyntax.self) {
@@ -378,14 +450,9 @@ public struct CustomHashable: ExtensionMacro, MemberMacro {
     private static func expansionForIsEqual(
         of node: AttributeSyntax,
         providingMembersOf declaration: some DeclGroupSyntax,
-        in context: some MacroExpansionContext
-    ) throws -> DeclSyntax {
-        guard let namedDeclaration = declaration as? ClassDeclSyntax else {
-            throw InvalidDeclarationTypeError()
-        }
-
-        let isDirectNSObjectSubclass = namedDeclaration.inheritanceClause?.inheritedTypes.first?.type.trimmedDescription == "NSObject"
-
+        in context: some MacroExpansionContext,
+        doIncorporateSuper: Bool
+    ) -> DeclSyntax {
         let baseModifiers = declaration.modifiers.filter({ modifier in
             switch (modifier.name.tokenKind) {
             case .keyword(.public):
@@ -546,7 +613,7 @@ public struct CustomHashable: ExtensionMacro, MemberMacro {
                     }
                 )
 
-                if !isDirectNSObjectSubclass {
+                if doIncorporateSuper {
                     GuardStmtSyntax(
                         conditions: ConditionElementListSyntax {
                             FunctionCallExprSyntax(
@@ -628,14 +695,9 @@ public struct CustomHashable: ExtensionMacro, MemberMacro {
     private static func expansionForHashProperty(
         of node: AttributeSyntax,
         providingMembersOf declaration: some DeclGroupSyntax,
-        in context: some MacroExpansionContext
-    ) throws -> DeclSyntax {
-        guard let namedDeclaration = declaration as? ClassDeclSyntax else {
-            throw InvalidDeclarationTypeError()
-        }
-
-        let isDirectNSObjectSubclass = namedDeclaration.inheritanceClause?.inheritedTypes.first?.type.trimmedDescription == "NSObject"
-
+        in context: some MacroExpansionContext,
+        doIncorporateSuper: Bool
+    ) -> DeclSyntax {
         let baseModifiers = declaration.modifiers.filter({ modifier in
             switch (modifier.name.tokenKind) {
             case .keyword(.public):
@@ -694,7 +756,7 @@ public struct CustomHashable: ExtensionMacro, MemberMacro {
                     ),
                     accessorBlock: AccessorBlockSyntax(
                         accessors: .getter(CodeBlockItemListSyntax(itemsBuilder: {
-                            let havePropertiesToHash = !isDirectNSObjectSubclass || !propertyNames.isEmpty
+                            let havePropertiesToHash = doIncorporateSuper || !propertyNames.isEmpty
 
                             VariableDeclSyntax(
                                 bindingSpecifier: .keyword(havePropertiesToHash ? .var : .let),
@@ -715,7 +777,7 @@ public struct CustomHashable: ExtensionMacro, MemberMacro {
                                 ])
                             )
 
-                            if !isDirectNSObjectSubclass {
+                            if doIncorporateSuper {
                                 FunctionCallExprSyntax(
                                     callee: MemberAccessExprSyntax(
                                         base: DeclReferenceExprSyntax(baseName: "hasher"),

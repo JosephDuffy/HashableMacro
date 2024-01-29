@@ -30,7 +30,9 @@ All decorated properties are included in both the `==` and `hash(into:)` impleme
 
 ## `NSObject` Support
 
-When a type inherits from `NSObject` it should override `hash` and `isEqual(_:)`, not `hash(into:)` and `==`. `CustomHashable` detects when it is attached to a type conforming to `NSObjectProtocol` and will provide the `hash` property and `isEqual(_:)` function instead. 
+When a type inherits from `NSObject` it should override `hash` and `isEqual(_:)`, not `hash(into:)` and `==`. `CustomHashable` detects when it is attached to a type conforming to `NSObjectProtocol` and will provide the `hash` property and `isEqual(_:)` function instead.
+
+By default `CustomHashable` will incorporate `super.isEqual(_:)` and `super.hash`, unless the type is a direct subclass of `NSObject`. This behaviour can be changed with the `nsObjectSubclassBehaviour` parameter.
 
 ## `final` `hash(into:)` Function
 
