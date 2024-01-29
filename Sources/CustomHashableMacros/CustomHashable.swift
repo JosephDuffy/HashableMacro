@@ -380,6 +380,12 @@ public struct CustomHashable: ExtensionMacro, MemberMacro {
         providingMembersOf declaration: some DeclGroupSyntax,
         in context: some MacroExpansionContext
     ) throws -> DeclSyntax {
+        guard let namedDeclaration = declaration as? ClassDeclSyntax else {
+            throw InvalidDeclarationTypeError()
+        }
+
+        let isDirectNSObjectSubclass = namedDeclaration.inheritanceClause?.inheritedTypes.first?.type.trimmedDescription == "NSObject"
+
         let baseModifiers = declaration.modifiers.filter({ modifier in
             switch (modifier.name.tokenKind) {
             case .keyword(.public):
@@ -480,20 +486,11 @@ public struct CustomHashable: ExtensionMacro, MemberMacro {
             statements: CodeBlockItemListSyntax(itemsBuilder: {
                 GuardStmtSyntax(
                     conditions: ConditionElementListSyntax {
-                        FunctionCallExprSyntax(
-                            calledExpression: MemberAccessExprSyntax(
-                                base: SuperExprSyntax(),
-                                name: .identifier("isEqual")
-                            ),
-                            leftParen: .leftParenToken(),
-                            arguments: [
-                                LabeledExprSyntax(
-                                    expression: DeclReferenceExprSyntax(
-                                        baseName: .identifier("object")
-                                    )
-                                )
-                            ],
-                            rightParen: .rightParenToken()
+                        OptionalBindingConditionSyntax(
+                            bindingSpecifier: .keyword(.let),
+                            pattern: IdentifierPatternSyntax(
+                                identifier: .identifier("object")
+                            )
                         )
                     },
                     bodyBuilder: {
@@ -503,6 +500,79 @@ public struct CustomHashable: ExtensionMacro, MemberMacro {
                         )
                     }
                 )
+                GuardStmtSyntax(
+                    conditions: ConditionElementListSyntax {
+                        InfixOperatorExprSyntax(
+                            leftOperand: FunctionCallExprSyntax(
+                                calledExpression: DeclReferenceExprSyntax(
+                                    baseName: .identifier("type")
+                                ),
+                                leftParen: .leftParenToken(),
+                                arguments: [
+                                    LabeledExprSyntax(
+                                        label: "of",
+                                        expression: DeclReferenceExprSyntax(
+                                            baseName: .keyword(.`self`)
+                                        )
+                                    )
+                                ],
+                                rightParen: .rightParenToken()
+                            ),
+                            operator: BinaryOperatorExprSyntax(
+                                operator: .binaryOperator("==")
+                            ),
+                            rightOperand: FunctionCallExprSyntax(
+                                calledExpression: DeclReferenceExprSyntax(
+                                    baseName: .identifier("type")
+                                ),
+                                leftParen: .leftParenToken(),
+                                arguments: [
+                                    LabeledExprSyntax(
+                                        label: "of",
+                                        expression: DeclReferenceExprSyntax(
+                                            baseName: .identifier("object")
+                                        )
+                                    )
+                                ],
+                                rightParen: .rightParenToken()
+                            )
+                        )
+                    },
+                    bodyBuilder: {
+                        ReturnStmtSyntax(
+                            leadingTrivia: .spaces(4),
+                            expression: BooleanLiteralExprSyntax(booleanLiteral: false)
+                        )
+                    }
+                )
+
+                if !isDirectNSObjectSubclass {
+                    GuardStmtSyntax(
+                        conditions: ConditionElementListSyntax {
+                            FunctionCallExprSyntax(
+                                calledExpression: MemberAccessExprSyntax(
+                                    base: SuperExprSyntax(),
+                                    name: .identifier("isEqual")
+                                ),
+                                leftParen: .leftParenToken(),
+                                arguments: [
+                                    LabeledExprSyntax(
+                                        expression: DeclReferenceExprSyntax(
+                                            baseName: .identifier("object")
+                                        )
+                                    )
+                                ],
+                                rightParen: .rightParenToken()
+                            )
+                        },
+                        bodyBuilder: {
+                            ReturnStmtSyntax(
+                                leadingTrivia: .spaces(4),
+                                expression: BooleanLiteralExprSyntax(booleanLiteral: false)
+                            )
+                        }
+                    )
+                }
                 if let comparisons {
                     GuardStmtSyntax(
                         conditions: ConditionElementListSyntax {
@@ -560,6 +630,12 @@ public struct CustomHashable: ExtensionMacro, MemberMacro {
         providingMembersOf declaration: some DeclGroupSyntax,
         in context: some MacroExpansionContext
     ) throws -> DeclSyntax {
+        guard let namedDeclaration = declaration as? ClassDeclSyntax else {
+            throw InvalidDeclarationTypeError()
+        }
+
+        let isDirectNSObjectSubclass = namedDeclaration.inheritanceClause?.inheritedTypes.first?.type.trimmedDescription == "NSObject"
+
         let baseModifiers = declaration.modifiers.filter({ modifier in
             switch (modifier.name.tokenKind) {
             case .keyword(.public):
@@ -618,8 +694,10 @@ public struct CustomHashable: ExtensionMacro, MemberMacro {
                     ),
                     accessorBlock: AccessorBlockSyntax(
                         accessors: .getter(CodeBlockItemListSyntax(itemsBuilder: {
+                            let havePropertiesToHash = !isDirectNSObjectSubclass || !propertyNames.isEmpty
+
                             VariableDeclSyntax(
-                                bindingSpecifier: .keyword(.var),
+                                bindingSpecifier: .keyword(havePropertiesToHash ? .var : .let),
                                 bindings: PatternBindingListSyntax([
                                     PatternBindingSyntax(
                                         pattern: IdentifierPatternSyntax(identifier: .identifier("hasher")),
@@ -637,20 +715,22 @@ public struct CustomHashable: ExtensionMacro, MemberMacro {
                                 ])
                             )
 
-                            FunctionCallExprSyntax(
-                                callee: MemberAccessExprSyntax(
-                                    base: DeclReferenceExprSyntax(baseName: "hasher"),
-                                    name: .identifier("combine")
-                                ),
-                                argumentList: {
-                                    LabeledExprSyntax(
-                                        expression: MemberAccessExprSyntax(
-                                            base: DeclReferenceExprSyntax(baseName: .keyword(.super)),
-                                            name: .identifier("hash")
+                            if !isDirectNSObjectSubclass {
+                                FunctionCallExprSyntax(
+                                    callee: MemberAccessExprSyntax(
+                                        base: DeclReferenceExprSyntax(baseName: "hasher"),
+                                        name: .identifier("combine")
+                                    ),
+                                    argumentList: {
+                                        LabeledExprSyntax(
+                                            expression: MemberAccessExprSyntax(
+                                                base: DeclReferenceExprSyntax(baseName: .keyword(.super)),
+                                                name: .identifier("hash")
+                                            )
                                         )
-                                    )
-                                }
-                            )
+                                    }
+                                )
+                            }
 
                             for propertyToken in propertyNames {
                                 FunctionCallExprSyntax(

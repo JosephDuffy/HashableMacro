@@ -74,9 +74,15 @@ final class CustomHashableTests: XCTestCase {
             nsObjectSubclassSubclassProperty: "456-different"
         )
         let value5 = NSObjectSubclass(nsObjectSubclassProperty: "123")
+        let value6 = NSObjectSubclassSubclass(
+            nsObjectSubclassProperty: "123",
+            nsObjectSubclassSubclassProperty: "456"
+        )
 
         XCTAssertEqual(value1, value1)
         XCTAssertEqual(value1.hashValue, value1.hashValue)
+        XCTAssertEqual(value1, value6)
+        XCTAssertEqual(value1.hashValue, value6.hashValue)
         XCTAssertEqual(value2, value2)
         XCTAssertEqual(value2.hashValue, value2.hashValue)
         XCTAssertEqual(value3, value3)
