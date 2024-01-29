@@ -34,9 +34,14 @@ When a type inherits from `NSObject` it should override `hash` and `isEqual(_:)`
 
 ## `final` `hash(into:)` Function
 
-When the `CustomHashable` macro is added to a class the generated `hash(into:)` function is marked `final`. This is because subclasses cannot override `==` and Swift will always use the `==` implementation from the superclass.
+When the `CustomHashable` macro is added to a class the generated `hash(into:)` function is marked `final`. This is because subclasses should not overload `==`. There are many reasons why this can be a bad idea, but specifically in Swift this does not work because:
 
-It is possible to work around these issues but they require extra care and sometimes per-class affordances. This is not the intention of `CustomHashable`.
+- `!=` is not part of the `Equatable` protocol, but rather an extension on `Equatable`, causing it to always use the `==` implementation from the class that adds `Equatable` conformance
+  - It is possible to overload `!=` but this is still not a good idea because...
+- Anything that uses generics to compare the values, for example `XCTAssertEqual`, will use the `==` implementation from the class that adds `Equatable` conformance
+  - It is possible to work around this by using a separate function, in a similar way to `NSObjectProtocol`, which is then called from `==`, but this requires extra decisions to be made that shouldn't be made by this library, e.g. what to do when a subclass is compared to its superclass.
+
+If this is an issue for your usage you can pass `finalHashInto: false` to the macro, but it will not attempt to call `super` or use the properties annotated with `@HashableKey` from the superclass.
 
 ## License
 
