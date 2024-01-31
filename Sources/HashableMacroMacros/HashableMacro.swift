@@ -118,13 +118,13 @@ public struct HashableMacro: ExtensionMacro {
                     ),
                     changes: [
                         FixIt.Change.replace(
-                            oldNode: notHashedAttribute._syntaxNode,
-                            newNode: ("" as DeclSyntax)._syntaxNode
+                            oldNode: Syntax(notHashedAttribute),
+                            newNode: Syntax("" as DeclSyntax)
                         )
                     ]
                 )
                 let diagnostic = Diagnostic(
-                    node: notHashedAttribute._syntaxNode,
+                    node: Syntax(notHashedAttribute),
                     message: HashableMacroDiagnosticMessage(
                         id: "redundant-not-hashed",
                         message: "The @NotHashed macro is redundant when 1 or more properties are decorated @Hashed. It will be ignored",
