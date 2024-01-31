@@ -87,12 +87,10 @@ public struct HashableMacro: ExtensionMacro {
             func attribute(named macroName: String) -> AttributeSyntax? {
                 for attribute in property.attributes {
                     guard let attribute = attribute.as(AttributeSyntax.self) else { continue }
-                    let attributeName = attribute
+                    let identifier = attribute
                         .attributeName
-                        .as(IdentifierTypeSyntax.self)?
-                        .name
-                        .text
-                    if attributeName == macroName {
+                        .as(IdentifierTypeSyntax.self)
+                    if identifier?.name.tokenKind == .identifier(macroName) {
                         return attribute
                     }
                 }
