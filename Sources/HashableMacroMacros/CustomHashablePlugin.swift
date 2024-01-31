@@ -9,10 +9,12 @@ struct HashableMacroPlugin: CompilerPlugin {
     let providingMacros: [Macro.Type] = [
         HashableMacro.self,
         HashedMacro.self,
+        NotHashedMacro.self,
     ]
     #else
     let providingMacros: [Macro.Type] = [
         HashedMacro.self,
+        NotHashedMacro.self,
     ]
     #endif
 }

@@ -9,11 +9,91 @@ final class HashableMacroTests: XCTestCase {
     /// when compiled.
     ///
     /// See https://github.com/apple/swift/issues/66348
-    func testHashableStructWithExcludedProperty() {
-        let value1 = HashableStructWithExcludedProperty(firstProperty: 1, secondProperty: 2, excludedProperty: 3)
-        let value2 = HashableStructWithExcludedProperty(firstProperty: 1, secondProperty: 3, excludedProperty: 3)
-        let value3 = HashableStructWithExcludedProperty(firstProperty: 1, secondProperty: 2, excludedProperty: 4)
-        let value4 = HashableStructWithExcludedProperty(firstProperty: 2, secondProperty: 3, excludedProperty: 3)
+    func testHashableStructWithExplicitlyIncludedProperties() {
+        let value1 = HashableStructWithExplicitlyIncludedProperties(firstProperty: 1, secondProperty: 2, excludedProperty: 3)
+        let value2 = HashableStructWithExplicitlyIncludedProperties(firstProperty: 1, secondProperty: 3, excludedProperty: 3)
+        let value3 = HashableStructWithExplicitlyIncludedProperties(firstProperty: 1, secondProperty: 2, excludedProperty: 4)
+        let value4 = HashableStructWithExplicitlyIncludedProperties(firstProperty: 2, secondProperty: 3, excludedProperty: 3)
+
+        XCTAssertEqual(value1, value1)
+
+        XCTAssertEqual(value2, value2)
+
+        XCTAssertEqual(value3, value3)
+
+        XCTAssertEqual(value4, value4)
+
+        XCTAssertEqual(value1, value3, "Third property should not be included in equality check; synthesised conformance should not be used")
+        XCTAssertEqual(value1.hashValue, value3.hashValue, "Third property should not be included in hash value; synthesised conformance should not be used")
+
+        XCTAssertNotEqual(value2, value3)
+        XCTAssertNotEqual(value2.hashValue, value3.hashValue)
+
+        XCTAssertNotEqual(value2, value4)
+        XCTAssertNotEqual(value2.hashValue, value4.hashValue)
+
+        XCTAssertNotEqual(value1, value2)
+        XCTAssertNotEqual(value1.hashValue, value2.hashValue)
+    }
+
+    func testHashableStructWithExplicitlyExcludedProperty() {
+        let value1 = HashableStructWithExplicitlyExcludedProperty(firstProperty: 1, secondProperty: 2, excludedProperty: 3)
+        let value2 = HashableStructWithExplicitlyExcludedProperty(firstProperty: 1, secondProperty: 3, excludedProperty: 3)
+        let value3 = HashableStructWithExplicitlyExcludedProperty(firstProperty: 1, secondProperty: 2, excludedProperty: 4)
+        let value4 = HashableStructWithExplicitlyExcludedProperty(firstProperty: 2, secondProperty: 3, excludedProperty: 3)
+
+        XCTAssertEqual(value1, value1)
+
+        XCTAssertEqual(value2, value2)
+
+        XCTAssertEqual(value3, value3)
+
+        XCTAssertEqual(value4, value4)
+
+        XCTAssertEqual(value1, value3, "Third property should not be included in equality check; synthesised conformance should not be used")
+        XCTAssertEqual(value1.hashValue, value3.hashValue, "Third property should not be included in hash value; synthesised conformance should not be used")
+
+        XCTAssertNotEqual(value2, value3)
+        XCTAssertNotEqual(value2.hashValue, value3.hashValue)
+
+        XCTAssertNotEqual(value2, value4)
+        XCTAssertNotEqual(value2.hashValue, value4.hashValue)
+
+        XCTAssertNotEqual(value1, value2)
+        XCTAssertNotEqual(value1.hashValue, value2.hashValue)
+    }
+
+    func testHashableStructWithNoDecorations() {
+        let value1 = HashableStructWithNoDecorations(firstProperty: 1, secondProperty: 2)
+        let value2 = HashableStructWithNoDecorations(firstProperty: 1, secondProperty: 3)
+        let value3 = HashableStructWithNoDecorations(firstProperty: 1, secondProperty: 2)
+        let value4 = HashableStructWithNoDecorations(firstProperty: 2, secondProperty: 3)
+
+        XCTAssertEqual(value1, value1)
+        XCTAssertEqual(value1, value3)
+        XCTAssertEqual(value1.hashValue, value3.hashValue)
+
+        XCTAssertEqual(value2, value2)
+
+        XCTAssertEqual(value3, value3)
+
+        XCTAssertEqual(value4, value4)
+
+        XCTAssertNotEqual(value2, value3)
+        XCTAssertNotEqual(value2.hashValue, value3.hashValue)
+
+        XCTAssertNotEqual(value2, value4)
+        XCTAssertNotEqual(value2.hashValue, value4.hashValue)
+
+        XCTAssertNotEqual(value1, value2)
+        XCTAssertNotEqual(value1.hashValue, value2.hashValue)
+    }
+
+    func testHashableStructWithExplictlyHashedComputedProperty() {
+        let value1 = HashableStructWithExplictlyHashedComputedProperty(firstProperty: 1, secondProperty: 2, excludedProperty: 3)
+        let value2 = HashableStructWithExplictlyHashedComputedProperty(firstProperty: 1, secondProperty: 3, excludedProperty: 3)
+        let value3 = HashableStructWithExplictlyHashedComputedProperty(firstProperty: 1, secondProperty: 2, excludedProperty: 4)
+        let value4 = HashableStructWithExplictlyHashedComputedProperty(firstProperty: 2, secondProperty: 3, excludedProperty: 3)
 
         XCTAssertEqual(value1, value1)
 

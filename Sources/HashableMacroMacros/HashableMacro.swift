@@ -53,6 +53,90 @@ public struct HashableMacro: ExtensionMacro {
             }
         }
 
+        let properties = declaration.memberBlock.members.compactMap({ $0.decl.as(VariableDeclSyntax.self) })
+        var explicitlyHashedProperties: [TokenSyntax] = []
+        var undecoratedProperties: [TokenSyntax] = []
+        var notHashedAttributes: [AttributeSyntax] = []
+
+        for property in properties {
+            let bindings = property.bindings.compactMap({ binding in
+                binding
+                    .pattern
+                    .as(IdentifierPatternSyntax.self)?
+                    .identifier
+            })
+            lazy var isCalculated = property.bindings.contains { binding in
+                guard let accessorBlock = binding.accessorBlock else { return false }
+                switch accessorBlock.accessors {
+                case .getter:
+                    return true
+                case .accessors(let accessors):
+                    for accessor in accessors {
+                        switch accessor.accessorSpecifier.tokenKind {
+                        case .keyword(.get):
+                            return true
+                        default:
+                            break
+                        }
+                    }
+                }
+                return false
+            }
+
+            func attribute(named macroName: String) -> AttributeSyntax? {
+                for attribute in property.attributes {
+                    guard let attribute = attribute.as(AttributeSyntax.self) else { continue }
+                    let attributeName = attribute
+                        .attributeName
+                        .as(IdentifierTypeSyntax.self)?
+                        .name
+                        .text
+                    if attributeName == macroName {
+                        return attribute
+                    }
+                }
+
+                return nil
+            }
+
+            if attribute(named: "Hashed") != nil {
+                explicitlyHashedProperties.append(contentsOf: bindings)
+            } else if let notHashedAttribute = attribute(named: "NotHashed") {
+                notHashedAttributes.append(notHashedAttribute)
+            } else if !isCalculated {
+                undecoratedProperties.append(contentsOf: bindings)
+            }
+        }
+
+        if !explicitlyHashedProperties.isEmpty {
+            for notHashedAttribute in notHashedAttributes {
+                let fixIt = FixIt(
+                    message: HashableMacroFixItMessage(
+                        id: "redundant-not-hashed",
+                        message: "Remove @NotHashed"
+                    ),
+                    changes: [
+                        FixIt.Change.replace(
+                            oldNode: notHashedAttribute._syntaxNode,
+                            newNode: ("" as DeclSyntax)._syntaxNode
+                        )
+                    ]
+                )
+                let diagnostic = Diagnostic(
+                    node: notHashedAttribute._syntaxNode,
+                    message: HashableMacroDiagnosticMessage(
+                        id: "redundant-not-hashed",
+                        message: "The @NotHashed macro is redundant when 1 or more properties are decorated @Hashed. It will be ignored",
+                        severity: .warning
+                    ),
+                    fixIt: fixIt
+                )
+                context.diagnose(diagnostic)
+            }
+        }
+
+        let propertiesToHash = !explicitlyHashedProperties.isEmpty ? explicitlyHashedProperties : undecoratedProperties
+
         #if canImport(ObjectiveC)
         if isNSObjectSubclass {
             guard let namedDeclaration = declaration as? ClassDeclSyntax else {
@@ -106,6 +190,7 @@ public struct HashableMacro: ExtensionMacro {
                             of: node,
                             providingMembersOf: declaration,
                             in: context,
+                            propertiesToHash: propertiesToHash,
                             doIncorporateSuper: doIncorporateSuper
                         )
                     })
@@ -119,6 +204,7 @@ public struct HashableMacro: ExtensionMacro {
                             of: node,
                             providingMembersOf: declaration,
                             in: context,
+                            propertiesToHash: propertiesToHash,
                             doIncorporateSuper: doIncorporateSuper
                         )
                     })
@@ -134,7 +220,8 @@ public struct HashableMacro: ExtensionMacro {
                         expansionForHashable(
                             of: node,
                             providingMembersOf: declaration,
-                            in: context
+                            in: context,
+                            propertiesToHash: propertiesToHash
                         )
                     })
                 )
@@ -146,7 +233,8 @@ public struct HashableMacro: ExtensionMacro {
                         try expansionForEquals(
                             of: node,
                             providingMembersOf: declaration,
-                            in: context
+                            in: context,
+                            propertiesToHash: propertiesToHash
                         )
                     })
                 )
@@ -162,7 +250,8 @@ public struct HashableMacro: ExtensionMacro {
                     expansionForHashable(
                         of: node,
                         providingMembersOf: declaration,
-                        in: context
+                        in: context,
+                        propertiesToHash: propertiesToHash
                     )
                 })
             )
@@ -174,7 +263,8 @@ public struct HashableMacro: ExtensionMacro {
                     try expansionForEquals(
                         of: node,
                         providingMembersOf: declaration,
-                        in: context
+                        in: context,
+                        propertiesToHash: propertiesToHash
                     )
                 })
             )
@@ -189,7 +279,8 @@ public struct HashableMacro: ExtensionMacro {
     private static func expansionForHashable(
         of node: AttributeSyntax,
         providingMembersOf declaration: some DeclGroupSyntax,
-        in context: some MacroExpansionContext
+        in context: some MacroExpansionContext,
+        propertiesToHash: [TokenSyntax]
     ) -> DeclSyntax {
         var finalHashInto = true
 
@@ -228,32 +319,6 @@ public struct HashableMacro: ExtensionMacro {
             }
         })
 
-        let memberList = declaration.memberBlock.members
-
-        let propertyNames = memberList.flatMap({ member -> [TokenSyntax] in
-            // is a property
-            guard let variable = member.decl.as(VariableDeclSyntax.self) else {
-                return []
-            }
-
-            let hasHashedMacro = variable.attributes.contains(where: { element in
-                let attributeName = element.as(AttributeSyntax.self)?.attributeName.as(IdentifierTypeSyntax.self)?.name.text
-                 return attributeName == "Hashed"
-            })
-
-            if hasHashedMacro {
-                return variable.bindings.compactMap({ binding in
-                    binding
-                        .as(PatternBindingSyntax.self)?
-                        .pattern
-                        .as(IdentifierPatternSyntax.self)?
-                        .identifier
-                })
-            } else {
-                return []
-            }
-        })
-
         var hashFunctionModifiers = baseModifiers
         if finalHashInto, declaration.is(ClassDeclSyntax.self) {
             hashFunctionModifiers.append(
@@ -278,7 +343,7 @@ public struct HashableMacro: ExtensionMacro {
 
         let hashFunctionBody = CodeBlockSyntax(
             statements: CodeBlockItemListSyntax(itemsBuilder: {
-                for propertyToken in propertyNames {
+                for propertyToken in propertiesToHash {
                     FunctionCallExprSyntax(
                         callee: MemberAccessExprSyntax(
                             base: DeclReferenceExprSyntax(baseName: "hasher"),
@@ -310,7 +375,8 @@ public struct HashableMacro: ExtensionMacro {
     private static func expansionForEquals(
         of node: AttributeSyntax,
         providingMembersOf declaration: some DeclGroupSyntax,
-        in context: some MacroExpansionContext
+        in context: some MacroExpansionContext,
+        propertiesToHash: [TokenSyntax]
     ) throws -> DeclSyntax {
         guard let namedDeclaration = declaration as? NamedDeclSyntax else {
             throw InvalidDeclarationTypeError()
@@ -329,32 +395,6 @@ public struct HashableMacro: ExtensionMacro {
                 return false
             default:
                 return false
-            }
-        })
-
-        let memberList = declaration.memberBlock.members
-
-        let propertyNames = memberList.flatMap({ member -> [TokenSyntax] in
-            // is a property
-            guard let variable = member.decl.as(VariableDeclSyntax.self) else {
-                return []
-            }
-
-            let hasHashedMacro = variable.attributes.contains(where: { element in
-                let attributeName = element.as(AttributeSyntax.self)?.attributeName.as(IdentifierTypeSyntax.self)?.name.text
-                 return attributeName == "Hashed"
-            })
-
-            if hasHashedMacro {
-                return variable.bindings.compactMap({ binding in
-                    binding
-                        .as(PatternBindingSyntax.self)?
-                        .pattern
-                        .as(IdentifierPatternSyntax.self)?
-                        .identifier
-                })
-            } else {
-                return []
             }
         })
 
@@ -379,7 +419,7 @@ public struct HashableMacro: ExtensionMacro {
 
         var comparisons: InfixOperatorExprSyntax?
 
-        for propertyToken in propertyNames {
+        for propertyToken in propertiesToHash {
             let comparison = InfixOperatorExprSyntax(
                 leftOperand: MemberAccessExprSyntax(
                     base: DeclReferenceExprSyntax(
@@ -451,6 +491,7 @@ public struct HashableMacro: ExtensionMacro {
         of node: AttributeSyntax,
         providingMembersOf declaration: some DeclGroupSyntax,
         in context: some MacroExpansionContext,
+        propertiesToHash: [TokenSyntax],
         doIncorporateSuper: Bool
     ) -> DeclSyntax {
         let baseModifiers = declaration.modifiers.filter({ modifier in
@@ -466,32 +507,6 @@ public struct HashableMacro: ExtensionMacro {
                 return false
             default:
                 return false
-            }
-        })
-
-        let memberList = declaration.memberBlock.members
-
-        let propertyNames = memberList.flatMap({ member -> [TokenSyntax] in
-            // is a property
-            guard let variable = member.decl.as(VariableDeclSyntax.self) else {
-                return []
-            }
-
-            let hasHashedMacro = variable.attributes.contains(where: { element in
-                let attributeName = element.as(AttributeSyntax.self)?.attributeName.as(IdentifierTypeSyntax.self)?.name.text
-                 return attributeName == "Hashed"
-            })
-
-            if hasHashedMacro {
-                return variable.bindings.compactMap({ binding in
-                    binding
-                        .as(PatternBindingSyntax.self)?
-                        .pattern
-                        .as(IdentifierPatternSyntax.self)?
-                        .identifier
-                })
-            } else {
-                return []
             }
         })
 
@@ -512,7 +527,7 @@ public struct HashableMacro: ExtensionMacro {
 
         var comparisons: InfixOperatorExprSyntax?
 
-        for propertyToken in propertyNames {
+        for propertyToken in propertiesToHash {
             let comparison = InfixOperatorExprSyntax(
                 leftOperand: MemberAccessExprSyntax(
                     base: DeclReferenceExprSyntax(
@@ -696,6 +711,7 @@ public struct HashableMacro: ExtensionMacro {
         of node: AttributeSyntax,
         providingMembersOf declaration: some DeclGroupSyntax,
         in context: some MacroExpansionContext,
+        propertiesToHash: [TokenSyntax],
         doIncorporateSuper: Bool
     ) -> DeclSyntax {
         let baseModifiers = declaration.modifiers.filter({ modifier in
@@ -711,32 +727,6 @@ public struct HashableMacro: ExtensionMacro {
                 return false
             default:
                 return false
-            }
-        })
-
-        let memberList = declaration.memberBlock.members
-
-        let propertyNames = memberList.flatMap({ member -> [TokenSyntax] in
-            // is a property
-            guard let variable = member.decl.as(VariableDeclSyntax.self) else {
-                return []
-            }
-
-            let hasHashedMacro = variable.attributes.contains(where: { element in
-                let attributeName = element.as(AttributeSyntax.self)?.attributeName.as(IdentifierTypeSyntax.self)?.name.text
-                 return attributeName == "Hashed"
-            })
-
-            if hasHashedMacro {
-                return variable.bindings.compactMap({ binding in
-                    binding
-                        .as(PatternBindingSyntax.self)?
-                        .pattern
-                        .as(IdentifierPatternSyntax.self)?
-                        .identifier
-                })
-            } else {
-                return []
             }
         })
 
@@ -756,7 +746,7 @@ public struct HashableMacro: ExtensionMacro {
                     ),
                     accessorBlock: AccessorBlockSyntax(
                         accessors: .getter(CodeBlockItemListSyntax(itemsBuilder: {
-                            let havePropertiesToHash = doIncorporateSuper || !propertyNames.isEmpty
+                            let havePropertiesToHash = doIncorporateSuper || !propertiesToHash.isEmpty
 
                             VariableDeclSyntax(
                                 bindingSpecifier: .keyword(havePropertiesToHash ? .var : .let),
@@ -794,7 +784,7 @@ public struct HashableMacro: ExtensionMacro {
                                 )
                             }
 
-                            for propertyToken in propertyNames {
+                            for propertyToken in propertiesToHash {
                                 FunctionCallExprSyntax(
                                     callee: MemberAccessExprSyntax(
                                         base: DeclReferenceExprSyntax(baseName: "hasher"),
@@ -843,5 +833,27 @@ private struct ErrorDiagnosticMessage: DiagnosticMessage, Error {
         self.message = message
         diagnosticID = MessageID(domain: "uk.josephduffy.HashableMacro", id: id)
         severity = .error
+    }
+}
+
+private struct HashableMacroDiagnosticMessage: DiagnosticMessage, Error {
+    let message: String
+    let diagnosticID: MessageID
+    let severity: DiagnosticSeverity
+
+    init(id: String, message: String, severity: DiagnosticSeverity) {
+        self.message = message
+        diagnosticID = MessageID(domain: "uk.josephduffy.HashableMacro", id: id)
+        self.severity = severity
+    }
+}
+
+private struct HashableMacroFixItMessage: FixItMessage {
+    let fixItID: MessageID
+    let message: String
+
+    init(id: String, message: String) {
+        fixItID = MessageID(domain: "uk.josephduffy.HashableMacro", id: id)
+        self.message = message
     }
 }

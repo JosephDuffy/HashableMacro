@@ -8,7 +8,7 @@
 The `@Hashable` macro is applied to the type that will conform to `Hashable` and the `Hashed` macro is applied to each of the properties that should contribute to the `Hashable` conformance.
 
 ```swift
-/// A struct that uses the ``stringProperty`` and ``intProperty`` for the `Hashable` conformance.
+/// A struct that uses the ``stringProperty`` and ``intProperty`` for `Hashable` conformance.
 @Hashable
 struct MyStruct {
     // Any property that is hashable is supported.
@@ -27,6 +27,51 @@ struct MyStruct {
 All decorated properties are included in both the `==` and `hash(into:)` implementations, ensuring the [contract of `Hashable`](<https://developer.apple.com/documentation/swift/hashable#:~:text=Two%20instances%20that%20are%20equal%20must%20feed%20the%20same%20values%20to%20Hasher%20in%20hash(into%3A)%2C%20in%20the%20same%20order.>) is upheld:
 
 > Two instances that are equal must feed the same values to `Hasher` in `hash(into:)`, in the same order.
+
+## `@NotHashed` Macro
+
+The `@NotHashed` macro can be applied to properties that _should not_ be included in the `Hashable` conformance. If this macro is used to decorate a property the `@Hashed` macro should not be used to decorate a property in the same type.
+
+This can be useful for types that have a smaller number of non-hashable properties than hashable properties.
+
+```swift
+/// A struct that uses the ``stringProperty`` and ``intProperty`` for `Hashable` conformance.
+@Hashable
+struct MyStruct {
+    // Implicitly used for `Hashable` conformance
+    let stringProperty: String
+
+    // Implicitly used for `Hashable` conformance
+    private let intProperty: Int
+
+    // Explicitly excluded from `Hashable` conformance
+    @NotHashed
+    let notHashableType: NotHashableType
+}
+```
+
+## `@Hashable` Only
+
+If the `@Hashable` macro is added but no properties are decorated with `@Hashed` or `@NotHashed` then all properties will be used.
+
+```swift
+/// A struct that uses the ``stringProperty`` and ``intProperty`` for `Hashable` conformance.
+@Hashable
+struct MyStruct {
+    // Implicitly used for `Hashable` conformance
+    let stringProperty: String
+
+    // Implicitly used for `Hashable` conformance
+    private let intProperty: Int
+
+    // Implicitly excluded from `Hashable` conformance
+    var computedProperty: Bool {
+      intProperty > 0
+    }
+}
+```
+
+One (fairly minor) advantage of this over adding `Hashable` conformance without the macro is that you can see the code being produce via Right Click → Expand Macro.
 
 ## `NSObject` Support
 

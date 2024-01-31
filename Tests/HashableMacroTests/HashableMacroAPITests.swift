@@ -7,12 +7,84 @@ import Foundation
 
 #if compiler(>=5.9.2)
 @Hashable
-struct HashableStructWithExcludedProperty {
+struct HashableStructWithExplicitlyIncludedProperties {
     @Hashed
     let firstProperty: Int
 
     @Hashed
     private let secondProperty: Int
+
+    // Should be implicitly ignored.
+    var computedProperty: Int {
+        // Return a random value so that tests will fail if this is used in Hashable conformance
+        .random(in: 0 ..< .max)
+    }
+
+    let excludedProperty: Int
+
+    init(firstProperty: Int, secondProperty: Int, excludedProperty: Int) {
+        self.firstProperty = firstProperty
+        self.secondProperty = secondProperty
+        self.excludedProperty = excludedProperty
+    }
+}
+
+@Hashable
+struct HashableStructWithExplicitlyExcludedProperty {
+    let firstProperty: Int
+
+    private let secondProperty: Int
+
+    // Should be implicitly ignored.
+    var computedProperty: Int {
+        // Return a random value so that tests will fail if this is used in Hashable conformance
+        .random(in: 0 ..< .max)
+    }
+
+    @NotHashed
+    let excludedProperty: Int
+
+    init(firstProperty: Int, secondProperty: Int, excludedProperty: Int) {
+        self.firstProperty = firstProperty
+        self.secondProperty = secondProperty
+        self.excludedProperty = excludedProperty
+    }
+}
+
+@Hashable
+struct HashableStructWithNoDecorations {
+    let firstProperty: Int
+
+    private let secondProperty: Int
+
+    // Should be implicitly ignored.
+    var computedProperty: Int {
+        // Return a random value so that tests will fail if this is used in Hashable conformance
+        .random(in: 0 ..< .max)
+    }
+
+    init(firstProperty: Int, secondProperty: Int) {
+        self.firstProperty = firstProperty
+        self.secondProperty = secondProperty
+    }
+}
+
+@Hashable
+struct HashableStructWithExplictlyHashedComputedProperty {
+    let firstProperty: Int
+
+    private let secondProperty: Int
+
+    @Hashed
+    var firstAndSecondProperty: String {
+        "\(firstProperty)-\(secondProperty)"
+    }
+
+    // Should be implicitly ignored.
+    var computedProperty: Int {
+        // Return a random value so that tests will fail if this is used in Hashable conformance
+        .random(in: 0 ..< .max)
+    }
 
     let excludedProperty: Int
 
