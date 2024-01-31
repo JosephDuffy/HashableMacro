@@ -46,9 +46,10 @@ public struct HashableMacro: ExtensionMacro {
                 isNSObjectSubclass = false
             #endif
             default:
-                throw ErrorDiagnosticMessage(
+                throw HashableMacroDiagnosticMessage(
                     id: "unknown-protocol",
-                    message: "Unknown protocol: '\(protocolType.trimmedDescription)'"
+                    message: "Unknown protocol: '\(protocolType.trimmedDescription)'",
+                    severity: .error
                 )
             }
         }
@@ -140,7 +141,11 @@ public struct HashableMacro: ExtensionMacro {
         #if canImport(ObjectiveC)
         if isNSObjectSubclass {
             guard let namedDeclaration = declaration as? ClassDeclSyntax else {
-                throw InvalidDeclarationTypeError()
+                throw HashableMacroDiagnosticMessage(
+                    id: "nsobject-subclass-not-class",
+                    message: "This type conforms to 'NSObjectProtocol' but is not a class",
+                    severity: .error
+                )
             }
 
             var nsObjectSubclassBehaviour: NSObjectSubclassBehaviour = .callSuperUnlessDirectSubclass
@@ -150,9 +155,10 @@ public struct HashableMacro: ExtensionMacro {
                     switch argument.label?.trimmedDescription {
                     case "nsObjectSubclassBehaviour":
                         guard let expression = argument.expression.as(MemberAccessExprSyntax.self) else {
-                            throw ErrorDiagnosticMessage(
+                            throw HashableMacroDiagnosticMessage(
                                 id: "unknown-nsObjectSubclassBehaviour-type",
-                                message: "'nsObjectSubclassBehaviour' parameter was not of the expected type"
+                                message: "'nsObjectSubclassBehaviour' parameter was not of the expected type",
+                                severity: .error
                             )
                         }
                         switch expression.declName.baseName.tokenKind {
@@ -163,7 +169,11 @@ public struct HashableMacro: ExtensionMacro {
                         case .identifier("alwaysCallSuper"):
                             nsObjectSubclassBehaviour = .alwaysCallSuper
                         default:
-                            throw ErrorDiagnosticMessage(id: "unknown-nsObjectSubclassBehaviour-name", message: "'\(expression.declName.baseName)' is not a known value for `NSObjectSubclassBehaviour`; \(expression.declName.baseName.debugDescription))")
+                            throw HashableMacroDiagnosticMessage(
+                                id: "unknown-nsObjectSubclassBehaviour-name",
+                                message: "'\(expression.declName.baseName)' is not a known value for `NSObjectSubclassBehaviour`; \(expression.declName.baseName.debugDescription))",
+                                severity: .error
+                            )
                         }
                     default:
                         break
@@ -379,7 +389,11 @@ public struct HashableMacro: ExtensionMacro {
         propertiesToHash: [TokenSyntax]
     ) throws -> DeclSyntax {
         guard let namedDeclaration = declaration as? NamedDeclSyntax else {
-            throw InvalidDeclarationTypeError()
+            throw HashableMacroDiagnosticMessage(
+                id: "not-named-declaration",
+                message: "'@Hashable' can only be applied to named declarations",
+                severity: .error
+            )
         }
 
         let baseModifiers = declaration.modifiers.filter({ modifier in
@@ -819,20 +833,6 @@ public struct HashableMacro: ExtensionMacro {
         )
 
         return DeclSyntax(hashPropertyDeclaration)
-    }
-}
-
-private struct InvalidDeclarationTypeError: Error {}
-
-private struct ErrorDiagnosticMessage: DiagnosticMessage, Error {
-    let message: String
-    let diagnosticID: MessageID
-    let severity: DiagnosticSeverity
-
-    init(id: String, message: String) {
-        self.message = message
-        diagnosticID = MessageID(domain: "uk.josephduffy.HashableMacro", id: id)
-        severity = .error
     }
 }
 
