@@ -1,7 +1,18 @@
 #if compiler(>=5.9.2)
+import MacroTesting
 import SwiftSyntaxMacros
 import SwiftSyntaxMacrosTestSupport
 import XCTest
+
+#if canImport(HashableMacroMacros)
+import HashableMacroMacros
+
+private let testMacros: [String: Macro.Type] = [
+    "Hashable": HashableMacro.self,
+    "Hashed": HashedMacro.self,
+    "NotHashed": NotHashedMacro.self,
+]
+#endif
 
 final class HashableMacroTests: XCTestCase {
     /// Test the usage of the `Hashable` API using a type decorated with the `@Hashable` macro
@@ -198,9 +209,394 @@ final class HashableMacroTests: XCTestCase {
         #endif
     }
 
-    // `assertMacroExpansion` used to be used here but the expansion is added in
-    // an extension because that's necessary to detect `NSObject` subclasses.
-    // The test library does not pass any protocols to the macro function, which
-    // is interpreted as the macro being attached to an `NSObject` subclass.
+    func testTypeNotExplicitlyConformingToHashable() throws {
+        #if canImport(HashableMacroMacros)
+        assertMacro(testMacros) {
+            """
+            @Hashable(_disableNSObjectSubclassSupport: true)
+            struct TypeNotExplicitlyConformingToHashable {
+                @Hashed
+                var hashablePropery1: String
+
+                @Hashed
+                var hashablePropery2: String
+
+                @Hashed
+                let hashablePropery3: String
+
+                var notHashablePropery: String
+
+                func extraFunction() {}
+            }
+            """
+        } expansion: {
+            """
+            struct TypeNotExplicitlyConformingToHashable {
+                var hashablePropery1: String
+                var hashablePropery2: String
+                let hashablePropery3: String
+
+                var notHashablePropery: String
+
+                func extraFunction() {}
+            }
+
+            extension TypeNotExplicitlyConformingToHashable {
+                func hash(into hasher: inout Hasher) {
+                    hasher.combine(self.hashablePropery1)
+                    hasher.combine(self.hashablePropery2)
+                    hasher.combine(self.hashablePropery3)
+                }
+            }
+
+            extension TypeNotExplicitlyConformingToHashable {
+                static func ==(lhs: TypeNotExplicitlyConformingToHashable, rhs: TypeNotExplicitlyConformingToHashable) -> Bool {
+                    return lhs.hashablePropery1 == rhs.hashablePropery1
+                        && lhs.hashablePropery2 == rhs.hashablePropery2
+                        && lhs.hashablePropery3 == rhs.hashablePropery3
+                }
+            }
+            """
+        }
+        #else
+        throw XCTSkip("Macros are only supported when running tests for the host platform")
+        #endif
+    }
+
+    func testStructWithoutAnyHashedProperties() throws {
+        #if canImport(HashableMacroMacros)
+        assertMacro(testMacros) {
+            """
+            @Hashable(_disableNSObjectSubclassSupport: true)
+            struct TypeWithoutHashableKeys {
+                var notHashedProperty: String
+            }
+            """
+        } expansion: {
+            """
+            struct TypeWithoutHashableKeys {
+                var notHashedProperty: String
+            }
+
+            extension TypeWithoutHashableKeys {
+                func hash(into hasher: inout Hasher) {
+                    hasher.combine(self.notHashedProperty)
+                }
+            }
+
+            extension TypeWithoutHashableKeys {
+                static func ==(lhs: TypeWithoutHashableKeys, rhs: TypeWithoutHashableKeys) -> Bool {
+                    return lhs.notHashedProperty == rhs.notHashedProperty
+                }
+            }
+            """
+        }
+        #else
+        throw XCTSkip("Macros are only supported when running tests for the host platform")
+        #endif
+    }
+
+    func testTypeWithExplicitHashableConformation() throws {
+        #if canImport(HashableMacroMacros)
+        assertMacro(testMacros) {
+            """
+            @Hashable(_disableNSObjectSubclassSupport: true)
+            struct TypeWithExplicitHashableConformation: Hashable {
+                @Hashed
+                var hashedProperty: String
+            }
+            """
+        } expansion: {
+            """
+            struct TypeWithExplicitHashableConformation: Hashable {
+                var hashedProperty: String
+            }
+
+            extension TypeWithExplicitHashableConformation {
+                func hash(into hasher: inout Hasher) {
+                    hasher.combine(self.hashedProperty)
+                }
+            }
+
+            extension TypeWithExplicitHashableConformation {
+                static func ==(lhs: TypeWithExplicitHashableConformation, rhs: TypeWithExplicitHashableConformation) -> Bool {
+                    return lhs.hashedProperty == rhs.hashedProperty
+                }
+            }
+            """
+        }
+        #else
+        throw XCTSkip("Macros are only supported when running tests for the host platform")
+        #endif
+    }
+
+    func testPublicType() throws {
+        #if canImport(HashableMacroMacros)
+        assertMacro(testMacros) {
+            """
+            @Hashable(_disableNSObjectSubclassSupport: true)
+            public struct PublicType {
+                @Hashed
+                var hashedProperty: String
+            }
+            """
+        } expansion: {
+            """
+            public struct PublicType {
+                var hashedProperty: String
+            }
+
+            extension PublicType {
+                public func hash(into hasher: inout Hasher) {
+                    hasher.combine(self.hashedProperty)
+                }
+            }
+
+            extension PublicType {
+                public static func ==(lhs: PublicType, rhs: PublicType) -> Bool {
+                    return lhs.hashedProperty == rhs.hashedProperty
+                }
+            }
+            """
+        }
+        #else
+        throw XCTSkip("Macros are only supported when running tests for the host platform")
+        #endif
+    }
+
+    func testExplicitlyInternalType() throws {
+        #if canImport(HashableMacroMacros)
+        assertMacro(testMacros) {
+            """
+            @Hashable(_disableNSObjectSubclassSupport: true)
+            internal struct ExplicitlyInternalType {
+                @Hashed
+                var hashedProperty: String
+            }
+            """
+        } expansion: {
+            """
+            internal struct ExplicitlyInternalType {
+                var hashedProperty: String
+            }
+
+            extension ExplicitlyInternalType {
+                internal func hash(into hasher: inout Hasher) {
+                    hasher.combine(self.hashedProperty)
+                }
+            }
+
+            extension ExplicitlyInternalType {
+                internal static func ==(lhs: ExplicitlyInternalType, rhs: ExplicitlyInternalType) -> Bool {
+                    return lhs.hashedProperty == rhs.hashedProperty
+                }
+            }
+            """
+        }
+        #else
+        throw XCTSkip("Macros are only supported when running tests for the host platform")
+        #endif
+    }
+
+    func testFilePrivateType() throws {
+        #if canImport(HashableMacroMacros)
+        assertMacro(testMacros) {
+            """
+            @Hashable(_disableNSObjectSubclassSupport: true)
+            fileprivate struct FilePrivateType {
+                @Hashed
+                var hashedProperty: String
+            }
+            """
+        } expansion: {
+            """
+            fileprivate struct FilePrivateType {
+                var hashedProperty: String
+            }
+
+            extension FilePrivateType {
+                fileprivate func hash(into hasher: inout Hasher) {
+                    hasher.combine(self.hashedProperty)
+                }
+            }
+
+            extension FilePrivateType {
+                fileprivate static func ==(lhs: FilePrivateType, rhs: FilePrivateType) -> Bool {
+                    return lhs.hashedProperty == rhs.hashedProperty
+                }
+            }
+            """
+        }
+        #else
+        throw XCTSkip("Macros are only supported when running tests for the host platform")
+        #endif
+    }
+
+    func testPrivateType() throws {
+        #if canImport(HashableMacroMacros)
+        assertMacro(testMacros) {
+            """
+            @Hashable(_disableNSObjectSubclassSupport: true)
+            private struct PrivateType {
+                @Hashed
+                var hashedProperty: String
+            }
+            """
+        } expansion: {
+            """
+            private struct PrivateType {
+                var hashedProperty: String
+            }
+
+            extension PrivateType {
+                func hash(into hasher: inout Hasher) {
+                    hasher.combine(self.hashedProperty)
+                }
+            }
+
+            extension PrivateType {
+                static func ==(lhs: PrivateType, rhs: PrivateType) -> Bool {
+                    return lhs.hashedProperty == rhs.hashedProperty
+                }
+            }
+            """
+        }
+        #else
+        throw XCTSkip("Macros are only supported when running tests for the host platform")
+        #endif
+    }
+
+    func testPublicFinalType() throws {
+        #if canImport(HashableMacroMacros)
+        assertMacro(testMacros) {
+            """
+            @Hashable(_disableNSObjectSubclassSupport: true)
+            public final class PublicFinalType {
+                @Hashed
+                var hashedProperty: String
+            }
+            """
+        } expansion: {
+            """
+            public final class PublicFinalType {
+                var hashedProperty: String
+            }
+
+            extension PublicFinalType {
+                public final func hash(into hasher: inout Hasher) {
+                    hasher.combine(self.hashedProperty)
+                }
+            }
+
+            extension PublicFinalType {
+                public static func ==(lhs: PublicFinalType, rhs: PublicFinalType) -> Bool {
+                    return lhs.hashedProperty == rhs.hashedProperty
+                }
+            }
+            """
+        }
+        #else
+        throw XCTSkip("Macros are only supported when running tests for the host platform")
+        #endif
+    }
+
+    func testComputedProperty() throws {
+        #if canImport(HashableMacroMacros)
+        assertMacro(testMacros) {
+            """
+            @Hashable(_disableNSObjectSubclassSupport: true)
+            struct TypeWithComputedPropertt {
+                @Hashed
+                var hashedProperty: String
+
+                var computedProperty: String { "computed" }
+            }
+            """
+        } expansion: {
+            """
+            struct TypeWithComputedPropertt {
+                var hashedProperty: String
+
+                var computedProperty: String { "computed" }
+            }
+
+            extension TypeWithComputedPropertt {
+                func hash(into hasher: inout Hasher) {
+                    hasher.combine(self.hashedProperty)
+                }
+            }
+
+            extension TypeWithComputedPropertt {
+                static func ==(lhs: TypeWithComputedPropertt, rhs: TypeWithComputedPropertt) -> Bool {
+                    return lhs.hashedProperty == rhs.hashedProperty
+                }
+            }
+            """
+        }
+        #else
+        throw XCTSkip("Macros are only supported when running tests for the host platform")
+        #endif
+    }
+
+    func testMixedHashedNotHashedDiagnostic() throws {
+        #if canImport(HashableMacroMacros)
+        assertMacro(testMacros) {
+            """
+            @Hashable(_disableNSObjectSubclassSupport: true)
+            struct TypeWithMixedHashedNotHashed {
+                @Hashed
+                var hashedProperty: String
+
+                @NotHashed
+                var notHashedProperty: String
+            }
+            """
+        } diagnostics: {
+            """
+            @Hashable(_disableNSObjectSubclassSupport: true)
+            struct TypeWithMixedHashedNotHashed {
+                @Hashed
+                var hashedProperty: String
+
+                @NotHashed
+                ┬─────────
+                ╰─ ⚠️ The @NotHashed macro is redundant when 1 or more properties are decorated @Hashed. It will be ignored
+                   ✏️ Remove @NotHashed
+                var notHashedProperty: String
+            }
+            """
+        } fixes: {
+            """
+            @Hashable(_disableNSObjectSubclassSupport: true)
+            struct TypeWithMixedHashedNotHashed {
+                @Hashed
+                var hashedProperty: String
+                var notHashedProperty: String
+            }
+            """
+        } expansion: {
+            """
+            struct TypeWithMixedHashedNotHashed {
+                var hashedProperty: String
+                var notHashedProperty: String
+            }
+
+            extension TypeWithMixedHashedNotHashed {
+                func hash(into hasher: inout Hasher) {
+                    hasher.combine(self.hashedProperty)
+                }
+            }
+
+            extension TypeWithMixedHashedNotHashed {
+                static func ==(lhs: TypeWithMixedHashedNotHashed, rhs: TypeWithMixedHashedNotHashed) -> Bool {
+                    return lhs.hashedProperty == rhs.hashedProperty
+                }
+            }
+            """
+        }
+        #else
+        throw XCTSkip("Macros are only supported when running tests for the host platform")
+        #endif
+    }
 }
 #endif

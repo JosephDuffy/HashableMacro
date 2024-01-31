@@ -137,6 +137,29 @@ public struct HashableMacro: ExtensionMacro {
         let propertiesToHash = !explicitlyHashedProperties.isEmpty ? explicitlyHashedProperties : undecoratedProperties
 
         #if canImport(ObjectiveC)
+        #if DEBUG
+        // The testing library does not process the required protocols and
+        // passes and empty array for `protocols`. This means that the macro
+        // assumes that the type conforms to `NSObjectProtocol`. This argument
+        // cannot be passed in code but it can be passed when the input code is
+        // written as a string.
+        if let arguments = node.arguments?.as(LabeledExprListSyntax.self) {
+            for argument in arguments {
+                switch argument.label?.trimmed.text {
+                case "_disableNSObjectSubclassSupport":
+                    guard let expression = argument.expression.as(BooleanLiteralExprSyntax.self) else { continue }
+                    switch expression.literal.tokenKind {
+                    case .keyword(.true):
+                        isNSObjectSubclass = false
+                    default:
+                        break
+                    }
+                default:
+                    break
+                }
+            }
+        }
+        #endif
         if isNSObjectSubclass {
             guard let namedDeclaration = declaration as? ClassDeclSyntax else {
                 throw HashableMacroDiagnosticMessage(

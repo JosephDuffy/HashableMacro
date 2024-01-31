@@ -22,6 +22,10 @@ let package = Package(
       url: "https://github.com/apple/swift-syntax.git",
       from: "509.1.0"
     ),
+    .package(
+        url: "https://github.com/pointfreeco/swift-macro-testing.git",
+        branch: "main" // Needed to test diagnostics. 0.2.3 or higher should be ok.
+    ),
   ],
   targets: [
     .target(
@@ -45,7 +49,8 @@ let package = Package(
       name: "HashableMacroTests",
       dependencies: [
         "HashableMacro",
-        "HashableMacroMacros", // Required for tests to compile on Swift < 5.9.2
+        "HashableMacroMacros",
+        .product(name: "MacroTesting", package: "swift-macro-testing"),
         .product(name: "SwiftSyntaxMacros", package: "swift-syntax"),
         .product(name: "SwiftSyntaxMacrosTestSupport", package: "swift-syntax"),
       ],
