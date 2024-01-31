@@ -8,7 +8,7 @@ import SwiftSyntax
 import SwiftSyntaxMacros
 
 @available(swift 5.9.2)
-public struct CustomHashable: ExtensionMacro, MemberMacro {
+public struct HashableMacro: ExtensionMacro {
     public static func expansion(
         of node: AttributeSyntax,
         attachedTo declaration: some DeclGroupSyntax,
@@ -236,12 +236,12 @@ public struct CustomHashable: ExtensionMacro, MemberMacro {
                 return []
             }
 
-            let hasHashableKeyMacro = variable.attributes.contains(where: { element in
+            let hasHashedMacro = variable.attributes.contains(where: { element in
                 let attributeName = element.as(AttributeSyntax.self)?.attributeName.as(IdentifierTypeSyntax.self)?.name.text
-                 return attributeName == "HashableKey"
+                 return attributeName == "Hashed"
             })
 
-            if hasHashableKeyMacro {
+            if hasHashedMacro {
                 return variable.bindings.compactMap({ binding in
                     binding
                         .as(PatternBindingSyntax.self)?
@@ -340,12 +340,12 @@ public struct CustomHashable: ExtensionMacro, MemberMacro {
                 return []
             }
 
-            let hasHashableKeyMacro = variable.attributes.contains(where: { element in
+            let hasHashedMacro = variable.attributes.contains(where: { element in
                 let attributeName = element.as(AttributeSyntax.self)?.attributeName.as(IdentifierTypeSyntax.self)?.name.text
-                 return attributeName == "HashableKey"
+                 return attributeName == "Hashed"
             })
 
-            if hasHashableKeyMacro {
+            if hasHashedMacro {
                 return variable.bindings.compactMap({ binding in
                     binding
                         .as(PatternBindingSyntax.self)?
@@ -477,12 +477,12 @@ public struct CustomHashable: ExtensionMacro, MemberMacro {
                 return []
             }
 
-            let hasHashableKeyMacro = variable.attributes.contains(where: { element in
+            let hasHashedMacro = variable.attributes.contains(where: { element in
                 let attributeName = element.as(AttributeSyntax.self)?.attributeName.as(IdentifierTypeSyntax.self)?.name.text
-                 return attributeName == "HashableKey"
+                 return attributeName == "Hashed"
             })
 
-            if hasHashableKeyMacro {
+            if hasHashedMacro {
                 return variable.bindings.compactMap({ binding in
                     binding
                         .as(PatternBindingSyntax.self)?
@@ -722,12 +722,12 @@ public struct CustomHashable: ExtensionMacro, MemberMacro {
                 return []
             }
 
-            let hasHashableKeyMacro = variable.attributes.contains(where: { element in
+            let hasHashedMacro = variable.attributes.contains(where: { element in
                 let attributeName = element.as(AttributeSyntax.self)?.attributeName.as(IdentifierTypeSyntax.self)?.name.text
-                 return attributeName == "HashableKey"
+                 return attributeName == "Hashed"
             })
 
-            if hasHashableKeyMacro {
+            if hasHashedMacro {
                 return variable.bindings.compactMap({ binding in
                     binding
                         .as(PatternBindingSyntax.self)?
@@ -841,7 +841,7 @@ private struct ErrorDiagnosticMessage: DiagnosticMessage, Error {
 
     init(id: String, message: String) {
         self.message = message
-        diagnosticID = MessageID(domain: "uk.josephduffy.CustomHashable", id: id)
+        diagnosticID = MessageID(domain: "uk.josephduffy.HashableMacro", id: id)
         severity = .error
     }
 }

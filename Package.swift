@@ -3,7 +3,7 @@ import CompilerPluginSupport
 import PackageDescription
 
 let package = Package(
-  name: "CustomHashable",
+  name: "HashableMacro",
   platforms: [
     .macOS(.v10_15),
     .iOS(.v13),
@@ -13,8 +13,8 @@ let package = Package(
   ],
   products: [
     .library(
-      name: "CustomHashable",
-      targets: ["CustomHashable"]
+      name: "HashableMacro",
+      targets: ["HashableMacro"]
     ),
   ],
   dependencies: [
@@ -25,14 +25,14 @@ let package = Package(
   ],
   targets: [
     .target(
-        name: "CustomHashable",
+        name: "HashableMacro",
         dependencies: [
-            "CustomHashableMacros",
+            "HashableMacroMacros",
         ],
         swiftSettings: [.enableExperimentalFeature("StrictConcurrency")]
     ),
     .macro(
-      name: "CustomHashableMacros",
+      name: "HashableMacroMacros",
       dependencies: [
         .product(name: "SwiftDiagnostics", package: "swift-syntax"),
         .product(name: "SwiftSyntax", package: "swift-syntax"),
@@ -42,10 +42,10 @@ let package = Package(
       swiftSettings: [.enableExperimentalFeature("StrictConcurrency")]
     ),
     .testTarget(
-      name: "CustomHashableTests",
+      name: "HashableMacroTests",
       dependencies: [
-        "CustomHashable",
-        "CustomHashableMacros", // Required for tests to compile on Swift < 5.9.2
+        "HashableMacro",
+        "HashableMacroMacros", // Required for tests to compile on Swift < 5.9.2
         .product(name: "SwiftSyntaxMacros", package: "swift-syntax"),
         .product(name: "SwiftSyntaxMacrosTestSupport", package: "swift-syntax"),
       ],

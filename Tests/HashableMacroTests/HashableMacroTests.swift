@@ -3,17 +3,17 @@ import SwiftSyntaxMacros
 import SwiftSyntaxMacrosTestSupport
 import XCTest
 
-final class CustomHashableTests: XCTestCase {
-    /// Test the usage of the `Hashable` API using a type decorated with the `@CustomHashable` macro
+final class HashableMacroTests: XCTestCase {
+    /// Test the usage of the `Hashable` API using a type decorated with the `@Hashable` macro
     /// that has been expanded by the compiler to check that the expanded implementation is honoured
     /// when compiled.
     ///
     /// See https://github.com/apple/swift/issues/66348
-    func testCustomHashableStructWithExcludedProperty() {
-        let value1 = CustomHashableStructWithExcludedProperty(firstProperty: 1, secondProperty: 2, excludedProperty: 3)
-        let value2 = CustomHashableStructWithExcludedProperty(firstProperty: 1, secondProperty: 3, excludedProperty: 3)
-        let value3 = CustomHashableStructWithExcludedProperty(firstProperty: 1, secondProperty: 2, excludedProperty: 4)
-        let value4 = CustomHashableStructWithExcludedProperty(firstProperty: 2, secondProperty: 3, excludedProperty: 3)
+    func testHashableStructWithExcludedProperty() {
+        let value1 = HashableStructWithExcludedProperty(firstProperty: 1, secondProperty: 2, excludedProperty: 3)
+        let value2 = HashableStructWithExcludedProperty(firstProperty: 1, secondProperty: 3, excludedProperty: 3)
+        let value3 = HashableStructWithExcludedProperty(firstProperty: 1, secondProperty: 2, excludedProperty: 4)
+        let value4 = HashableStructWithExcludedProperty(firstProperty: 2, secondProperty: 3, excludedProperty: 3)
 
         XCTAssertEqual(value1, value1)
 
@@ -36,10 +36,10 @@ final class CustomHashableTests: XCTestCase {
         XCTAssertNotEqual(value1.hashValue, value2.hashValue)
     }
 
-    func testCustomHashableClassWithPrivateProperty() {
-        let value1 = CustomHashableClassWithPrivateProperty(firstProperty: 1, secondProperty: 2, privateProperty: 3)
-        let value2 = CustomHashableClassWithPrivateProperty(firstProperty: 2, secondProperty: 2, privateProperty: 3)
-        let value3 = CustomHashableClassWithPrivateProperty(firstProperty: 1, secondProperty: 2, privateProperty: 4)
+    func testHashableClassWithPrivateProperty() {
+        let value1 = HashableClassWithPrivateProperty(firstProperty: 1, secondProperty: 2, privateProperty: 3)
+        let value2 = HashableClassWithPrivateProperty(firstProperty: 2, secondProperty: 2, privateProperty: 3)
+        let value3 = HashableClassWithPrivateProperty(firstProperty: 1, secondProperty: 2, privateProperty: 4)
 
         XCTAssertEqual(value1, value1)
         XCTAssertEqual(value1.hashValue, value1.hashValue)
