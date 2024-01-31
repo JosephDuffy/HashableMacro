@@ -4,15 +4,17 @@ import SwiftSyntaxBuilder
 import SwiftSyntaxMacros
 
 @main
-struct CustomHashablePlugin: CompilerPlugin {
+struct HashableMacroPlugin: CompilerPlugin {
     #if compiler(>=5.9.2)
     let providingMacros: [Macro.Type] = [
-        CustomHashable.self,
-        HashableKey.self,
+        HashableMacro.self,
+        HashedMacro.self,
+        NotHashedMacro.self,
     ]
     #else
     let providingMacros: [Macro.Type] = [
-        HashableKey.self,
+        HashedMacro.self,
+        NotHashedMacro.self,
     ]
     #endif
 }

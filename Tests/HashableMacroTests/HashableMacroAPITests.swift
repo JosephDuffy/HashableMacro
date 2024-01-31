@@ -1,17 +1,24 @@
-// This file contains some types that use the @CustomHashable macro directly because the
+// This file contains some types that use the @Hashable macro directly because the
 // SwiftSyntaxMacrosTestSupport does not provide a way to check for which protocol conformances have
 // been added, and the Swift compiler had a bug relating to this:
 // https://github.com/apple/swift/issues/66348
-import CustomHashable
+import HashableMacro
+import Foundation
 
 #if compiler(>=5.9.2)
-@CustomHashable
-struct CustomHashableStructWithExcludedProperty {
-    @HashableKey
+@Hashable
+struct HashableStructWithExplicitlyIncludedProperties {
+    @Hashed
     let firstProperty: Int
 
-    @HashableKey
+    @Hashed
     private let secondProperty: Int
+
+    // Should be implicitly ignored.
+    var computedProperty: Int {
+        // Return a random value so that tests will fail if this is used in Hashable conformance
+        .random(in: 0 ..< .max)
+    }
 
     let excludedProperty: Int
 
@@ -22,15 +29,81 @@ struct CustomHashableStructWithExcludedProperty {
     }
 }
 
-@CustomHashable
-public class CustomHashableClassWithPrivateProperty {
-    @HashableKey
+@Hashable
+struct HashableStructWithExplicitlyExcludedProperty {
     let firstProperty: Int
 
-    @HashableKey
+    private let secondProperty: Int
+
+    // Should be implicitly ignored.
+    var computedProperty: Int {
+        // Return a random value so that tests will fail if this is used in Hashable conformance
+        .random(in: 0 ..< .max)
+    }
+
+    @NotHashed
+    let excludedProperty: Int
+
+    init(firstProperty: Int, secondProperty: Int, excludedProperty: Int) {
+        self.firstProperty = firstProperty
+        self.secondProperty = secondProperty
+        self.excludedProperty = excludedProperty
+    }
+}
+
+@Hashable
+struct HashableStructWithNoDecorations {
+    let firstProperty: Int
+
+    private let secondProperty: Int
+
+    // Should be implicitly ignored.
+    var computedProperty: Int {
+        // Return a random value so that tests will fail if this is used in Hashable conformance
+        .random(in: 0 ..< .max)
+    }
+
+    init(firstProperty: Int, secondProperty: Int) {
+        self.firstProperty = firstProperty
+        self.secondProperty = secondProperty
+    }
+}
+
+@Hashable
+struct HashableStructWithExplictlyHashedComputedProperty {
+    let firstProperty: Int
+
+    private let secondProperty: Int
+
+    @Hashed
+    var firstAndSecondProperty: String {
+        "\(firstProperty)-\(secondProperty)"
+    }
+
+    // Should be implicitly ignored.
+    var computedProperty: Int {
+        // Return a random value so that tests will fail if this is used in Hashable conformance
+        .random(in: 0 ..< .max)
+    }
+
+    let excludedProperty: Int
+
+    init(firstProperty: Int, secondProperty: Int, excludedProperty: Int) {
+        self.firstProperty = firstProperty
+        self.secondProperty = secondProperty
+        self.excludedProperty = excludedProperty
+    }
+}
+
+@Hashable
+public class HashableClassWithPrivateProperty: Hashable {
+    @Hashed
+    let firstProperty: Int
+
+    @Hashed
     let secondProperty: Int
 
-    @HashableKey
+    @Hashed
     private let privateProperty: Int
 
     init(firstProperty: Int, secondProperty: Int, privateProperty: Int) {
@@ -42,7 +115,7 @@ public class CustomHashableClassWithPrivateProperty {
 
 /// A type that explicitly conforms to `Hashable`; the macro should not try to
 /// add conformance (but it should still add the implementation required).
-@CustomHashable
+@Hashable
 public class TypeExplicitlyConformingToHashable: Hashable {}
 
 /// A type that includes multiple properties declared on the same line.
@@ -50,59 +123,59 @@ public class TypeExplicitlyConformingToHashable: Hashable {}
 /// The macro supports this but using `assertMacroExpansion` raises an error:
 ///
 /// _swift-syntax applies macros syntactically and there is no way to represent a variable declaration with multiple bindings that have accessors syntactically. While the compiler allows this expansion, swift-syntax cannot represent it and thus disallows it._
-@CustomHashable
+@Hashable
 struct TypeWithMultipleVariablesOnSameLine {
-    @HashableKey
+    @Hashed
     var hashablePropery1: String
 
-    @HashableKey
+    @Hashed
     var hashablePropery2: String
 
-    @HashableKey
+    @Hashed
     let hashablePropery3, hashablePropery4: String
 
     var notHashablePropery: String
 }
 
-@CustomHashable
+@Hashable
 fileprivate struct FilePrivateType {
-    @HashableKey
+    @Hashed
     var hashablePropery1: String
 }
 
-@CustomHashable
+@Hashable
 private struct PrivateType {
-    @HashableKey
+    @Hashed
     var hashedProperty: String
 }
 
-@CustomHashable
+@Hashable
 public final class PublicFinalType {
-    @HashableKey
+    @Hashed
     var hashedProperty: String = ""
 }
 
-@CustomHashable
+@Hashable
 struct ExplicitEquatableStruct: Equatable {
-    @HashableKey
+    @Hashed
     var hashedProperty: String = ""
 }
 
-@CustomHashable
+@Hashable
 struct CustomEqualityStruct {
-    @HashableKey
+    @Hashed
     var hashedProperty: String = ""
 }
 
 #if canImport(ObjectiveC)
 import ObjectiveC
 
-@CustomHashable
+@Hashable
 class NSObjectSubclassWithoutExtraProperties: NSObject {}
 
-@CustomHashable
+@Hashable
 class NSObjectSubclass: NSObject {
-    @HashableKey
+    @Hashed
     var nsObjectSubclassProperty: String
     
     init(nsObjectSubclassProperty: String) {
@@ -110,9 +183,9 @@ class NSObjectSubclass: NSObject {
     }
 }
 
-@CustomHashable
+@Hashable
 class NSObjectSubclassSubclass: NSObjectSubclass {
-    @HashableKey
+    @Hashed
     var nsObjectSubclassSubclassProperty: String
 
     init(
