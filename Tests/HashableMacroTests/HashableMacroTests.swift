@@ -795,6 +795,7 @@ final class HashableMacroTests: XCTestCase {
 
     func testDirectNSObjectSubclass() throws {
         #if canImport(HashableMacroMacros)
+        #if canImport(ObjectiveC)
         assertMacro(testMacros) {
             """
             @Hashable(_disableNSObjectSubclassSupport: false)
@@ -844,12 +845,16 @@ final class HashableMacroTests: XCTestCase {
             """
         }
         #else
+        throw XCTSkip("This expansion requires Objective-C")
+        #endif
+        #else
         throw XCTSkip("Macros are only supported when running tests for the host platform")
         #endif
     }
 
     func testDirectNSObjectSubclass_neverCallSuper() throws {
         #if canImport(HashableMacroMacros)
+        #if canImport(ObjectiveC)
         assertMacro(testMacros) {
             """
             @Hashable(_disableNSObjectSubclassSupport: false, nsObjectSubclassBehaviour: .neverCallSuper)
@@ -893,12 +898,16 @@ final class HashableMacroTests: XCTestCase {
             """
         }
         #else
+        throw XCTSkip("This expansion requires Objective-C")
+        #endif
+        #else
         throw XCTSkip("Macros are only supported when running tests for the host platform")
         #endif
     }
 
     func testDirectNSObjectSubclass_callSuperUnlessDirectSubclass() throws {
         #if canImport(HashableMacroMacros)
+        #if canImport(ObjectiveC)
         assertMacro(testMacros) {
             """
             @Hashable(_disableNSObjectSubclassSupport: false, nsObjectSubclassBehaviour: .callSuperUnlessDirectSubclass)
@@ -942,12 +951,16 @@ final class HashableMacroTests: XCTestCase {
             """
         }
         #else
+        throw XCTSkip("This expansion requires Objective-C")
+        #endif
+        #else
         throw XCTSkip("Macros are only supported when running tests for the host platform")
         #endif
     }
 
     func testDirectNSObjectSubclass_alwaysCallSuper() throws {
         #if canImport(HashableMacroMacros)
+        #if canImport(ObjectiveC)
         assertMacro(testMacros) {
             """
             @Hashable(_disableNSObjectSubclassSupport: false, nsObjectSubclassBehaviour: .alwaysCallSuper)
@@ -995,12 +1008,16 @@ final class HashableMacroTests: XCTestCase {
             """
         }
         #else
+        throw XCTSkip("This expansion requires Objective-C")
+        #endif
+        #else
         throw XCTSkip("Macros are only supported when running tests for the host platform")
         #endif
     }
 
     func testIndirectNSObjectSubclass() throws {
         #if canImport(HashableMacroMacros)
+        #if canImport(ObjectiveC)
         assertMacro(testMacros) {
             """
             @Hashable(_disableNSObjectSubclassSupport: false)
@@ -1048,12 +1065,16 @@ final class HashableMacroTests: XCTestCase {
             """
         }
         #else
+        throw XCTSkip("This expansion requires Objective-C")
+        #endif
+        #else
         throw XCTSkip("Macros are only supported when running tests for the host platform")
         #endif
     }
 
     func testIndirectNSObjectSubclass_neverCallSuper() throws {
         #if canImport(HashableMacroMacros)
+        #if canImport(ObjectiveC)
         assertMacro(testMacros) {
             """
             @Hashable(_disableNSObjectSubclassSupport: false, nsObjectSubclassBehaviour: .neverCallSuper)
@@ -1097,12 +1118,16 @@ final class HashableMacroTests: XCTestCase {
             """
         }
         #else
+        throw XCTSkip("This expansion requires Objective-C")
+        #endif
+        #else
         throw XCTSkip("Macros are only supported when running tests for the host platform")
         #endif
     }
 
     func testIndirectNSObjectSubclass_callSuperUnlessDirectSubclass() throws {
         #if canImport(HashableMacroMacros)
+        #if canImport(ObjectiveC)
         assertMacro(testMacros) {
             """
             @Hashable(_disableNSObjectSubclassSupport: false, nsObjectSubclassBehaviour: .callSuperUnlessDirectSubclass)
@@ -1150,12 +1175,16 @@ final class HashableMacroTests: XCTestCase {
             """
         }
         #else
+        throw XCTSkip("This expansion requires Objective-C")
+        #endif
+        #else
         throw XCTSkip("Macros are only supported when running tests for the host platform")
         #endif
     }
 
     func testIndirectNSObjectSubclass_alwaysCallSuper() throws {
         #if canImport(HashableMacroMacros)
+        #if canImport(ObjectiveC)
         assertMacro(testMacros) {
             """
             @Hashable(_disableNSObjectSubclassSupport: false, nsObjectSubclassBehaviour: .alwaysCallSuper)
@@ -1202,6 +1231,9 @@ final class HashableMacroTests: XCTestCase {
             }
             """
         }
+        #else
+        throw XCTSkip("This expansion requires Objective-C")
+        #endif
         #else
         throw XCTSkip("Macros are only supported when running tests for the host platform")
         #endif
