@@ -170,10 +170,10 @@ struct CustomEqualityStruct {
 #if canImport(ObjectiveC)
 import ObjectiveC
 
-@Hashable
+@Hashable(nsObjectSubclassBehaviour:.callSuperUnlessDirectSubclass)
 class NSObjectSubclassWithoutExtraProperties: NSObject {}
 
-@Hashable
+@Hashable(nsObjectSubclassBehaviour:.callSuperUnlessDirectSubclass)
 class NSObjectSubclass: NSObject {
     @Hashed
     var nsObjectSubclassProperty: String
@@ -183,7 +183,7 @@ class NSObjectSubclass: NSObject {
     }
 }
 
-@Hashable
+@Hashable(nsObjectSubclassBehaviour:.callSuperUnlessDirectSubclass)
 class NSObjectSubclassSubclass: NSObjectSubclass {
     @Hashed
     var nsObjectSubclassSubclassProperty: String

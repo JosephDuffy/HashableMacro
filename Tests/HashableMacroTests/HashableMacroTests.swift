@@ -809,6 +809,37 @@ final class HashableMacroTests: XCTestCase {
                 var notHashedProperty: String
             }
             """
+        } diagnostics: {
+            """
+            @Hashable(_disableNSObjectSubclassSupport: false)
+            ┬────────────────────────────────────────────────
+            ╰─ ⚠️ The 'nsObjectSubclassBehaviour' parameter is required when @Hashable is applied to a type conforming to 'NSObjectProtocol'.
+               ✏️ Add nsObjectSubclassBehaviour: .callSuperUnlessDirectSubclass
+               ✏️ Add nsObjectSubclassBehaviour: .neverCallSuper
+               ✏️ Add nsObjectSubclassBehaviour: .alwaysCallSuper
+            class TestClass: NSObject {
+                @Hashed
+                var hashedProperty: String
+
+                @Hashed
+                var secondHashedProperty: String
+
+                var notHashedProperty: String
+            }
+            """
+        } fixes: {
+            """
+            @Hashable(_disableNSObjectSubclassSupport: falsensObjectSubclassBehaviour:.callSuperUnlessDirectSubclass)
+            class TestClass: NSObject {
+                @Hashed
+                var hashedProperty: String
+
+                @Hashed
+                var secondHashedProperty: String
+
+                var notHashedProperty: String
+            }
+            """
         } expansion: {
             """
             class TestClass: NSObject {
@@ -1021,6 +1052,31 @@ final class HashableMacroTests: XCTestCase {
         assertMacro(testMacros) {
             """
             @Hashable(_disableNSObjectSubclassSupport: false)
+            class TestClass: UIView {
+                @Hashed
+                var hashedProperty: String
+
+                var notHashedProperty: String
+            }
+            """
+        } diagnostics: {
+            """
+            @Hashable(_disableNSObjectSubclassSupport: false)
+            ┬────────────────────────────────────────────────
+            ╰─ ⚠️ The 'nsObjectSubclassBehaviour' parameter is required when @Hashable is applied to a type conforming to 'NSObjectProtocol'.
+               ✏️ Add nsObjectSubclassBehaviour: .callSuperUnlessDirectSubclass
+               ✏️ Add nsObjectSubclassBehaviour: .neverCallSuper
+               ✏️ Add nsObjectSubclassBehaviour: .alwaysCallSuper
+            class TestClass: UIView {
+                @Hashed
+                var hashedProperty: String
+
+                var notHashedProperty: String
+            }
+            """
+        } fixes: {
+            """
+            @Hashable(_disableNSObjectSubclassSupport: falsensObjectSubclassBehaviour:.callSuperUnlessDirectSubclass)
             class TestClass: UIView {
                 @Hashed
                 var hashedProperty: String

@@ -170,6 +170,7 @@ public struct HashableMacro: ExtensionMacro {
             }
 
             var nsObjectSubclassBehaviour: NSObjectSubclassBehaviour = .callSuperUnlessDirectSubclass
+            var didIncludeNSObjectSubclassBehaviourParameter = false
 
             if let arguments = node.arguments?.as(LabeledExprListSyntax.self) {
                 for argument in arguments {
@@ -182,6 +183,9 @@ public struct HashableMacro: ExtensionMacro {
                                 severity: .error
                             )
                         }
+
+                        didIncludeNSObjectSubclassBehaviourParameter = true
+
                         switch expression.declName.baseName.tokenKind {
                         case .identifier("neverCallSuper"):
                             nsObjectSubclassBehaviour = .neverCallSuper
@@ -200,6 +204,52 @@ public struct HashableMacro: ExtensionMacro {
                         break
                     }
                 }
+            }
+
+            if !didIncludeNSObjectSubclassBehaviourParameter {
+                func fixItWithBehavior(_ behavior: String) -> FixIt {
+                    var arguments: LabeledExprListSyntax = node.arguments?.as(LabeledExprListSyntax.self) ?? []
+                    arguments.append(
+                        LabeledExprSyntax(
+                            label: "nsObjectSubclassBehaviour",
+                            expression: MemberAccessExprSyntax(
+                                declName: DeclReferenceExprSyntax(
+                                    baseName: .identifier(behavior)
+                                )
+                            )
+                        )
+                    )
+                    var newNode = node
+                    newNode.leftParen = .leftParenToken()
+                    newNode.arguments = .argumentList(arguments)
+                    newNode.rightParen = .rightParenToken()
+                    return FixIt(
+                        message: HashableMacroFixItMessage(
+                            id: "missing-nsObjectSubclassBehaviour-for-nsobject-subclass-add-\(behavior)",
+                            message: "Add nsObjectSubclassBehaviour: .\(behavior)"
+                        ),
+                        changes: [
+                            FixIt.Change.replace(
+                                oldNode: Syntax(node),
+                                newNode: Syntax(newNode)
+                            )
+                        ]
+                    )
+                }
+                let diagnostic = Diagnostic(
+                    node: Syntax(node),
+                    message: HashableMacroDiagnosticMessage(
+                        id: "missing-nsObjectSubclassBehaviour-for-nsobject-subclass",
+                        message: "The 'nsObjectSubclassBehaviour' parameter is required when @Hashable is applied to a type conforming to 'NSObjectProtocol'.",
+                        severity: .warning
+                    ),
+                    fixIts: [
+                        fixItWithBehavior("callSuperUnlessDirectSubclass"),
+                        fixItWithBehavior("neverCallSuper"),
+                        fixItWithBehavior("alwaysCallSuper"),
+                    ]
+                )
+                context.diagnose(diagnostic)
             }
 
             let doIncorporateSuper: Bool
