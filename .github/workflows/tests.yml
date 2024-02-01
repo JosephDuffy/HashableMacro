@@ -109,8 +109,6 @@ jobs:
         with:
           files: ${{ join(fromJSON(steps.convert-coverage.outputs.files), ',') }}
           fail_ci_if_error: true
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   linux_tests:
     name: Swift ${{ matrix.swift }} on ${{ matrix.os }}
