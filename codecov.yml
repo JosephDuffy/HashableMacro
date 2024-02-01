@@ -1,0 +1,3 @@
+ignore:
+  - "HashableMacro/Sources/HashableMacroMacros/CustomHashablePlugin.swift"
+  - "HashableMacro/Tests/HashableMacroTests/HashableMacroAPITests.swift"
