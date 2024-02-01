@@ -589,7 +589,7 @@ public struct HashableMacro: ExtensionMacro {
                 comparisons = InfixOperatorExprSyntax(
                     leftOperand: existingComparisons,
                     operator: BinaryOperatorExprSyntax(
-                        leadingTrivia: .newline.appending(Trivia.spaces(8)),
+                        leadingTrivia: .newline.appending(Trivia.spaces(4)),
                         operator: .binaryOperator("&&")
                     ),
                     rightOperand: comparison

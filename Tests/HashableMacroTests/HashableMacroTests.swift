@@ -296,7 +296,7 @@ final class HashableMacroTests: XCTestCase {
         #endif
     }
 
-    func testTypeWithExplicitHashableConformation() throws {
+    func testTypeWithExplicitHashableConformance() throws {
         #if canImport(HashableMacroMacros)
         assertMacro(testMacros) {
             """
@@ -466,6 +466,39 @@ final class HashableMacroTests: XCTestCase {
         #endif
     }
 
+    func testStructWithAllExcludedProperties() throws {
+        #if canImport(HashableMacroMacros)
+        assertMacro(testMacros) {
+            """
+            @Hashable(_disableNSObjectSubclassSupport: true)
+            struct TestStruct {
+                @NotHashed
+                var hashedProperty: String
+            }
+            """
+        } expansion: {
+            """
+            struct TestStruct {
+                var hashedProperty: String
+            }
+
+            extension TestStruct {
+                func hash(into hasher: inout Hasher) {
+                }
+            }
+
+            extension TestStruct {
+                static func ==(lhs: TestStruct, rhs: TestStruct) -> Bool {
+                    return true
+                }
+            }
+            """
+        }
+        #else
+        throw XCTSkip("Macros are only supported when running tests for the host platform")
+        #endif
+    }
+
     func testPublicFinalType() throws {
         #if canImport(HashableMacroMacros)
         assertMacro(testMacros) {
@@ -490,6 +523,74 @@ final class HashableMacroTests: XCTestCase {
 
             extension PublicFinalType {
                 public static func ==(lhs: PublicFinalType, rhs: PublicFinalType) -> Bool {
+                    return lhs.hashedProperty == rhs.hashedProperty
+                }
+            }
+            """
+        }
+        #else
+        throw XCTSkip("Macros are only supported when running tests for the host platform")
+        #endif
+    }
+
+    func testExplicitFinalHashInto() throws {
+        #if canImport(HashableMacroMacros)
+        assertMacro(testMacros) {
+            """
+            @Hashable(_disableNSObjectSubclassSupport: true, finalHashInto: true)
+            public class TestClass {
+                @Hashed
+                var hashedProperty: String
+            }
+            """
+        } expansion: {
+            """
+            public class TestClass {
+                var hashedProperty: String
+            }
+
+            extension TestClass {
+                public final func hash(into hasher: inout Hasher) {
+                    hasher.combine(self.hashedProperty)
+                }
+            }
+
+            extension TestClass {
+                public static func ==(lhs: TestClass, rhs: TestClass) -> Bool {
+                    return lhs.hashedProperty == rhs.hashedProperty
+                }
+            }
+            """
+        }
+        #else
+        throw XCTSkip("Macros are only supported when running tests for the host platform")
+        #endif
+    }
+
+    func testExplicitNotFinalHashInto() throws {
+        #if canImport(HashableMacroMacros)
+        assertMacro(testMacros) {
+            """
+            @Hashable(_disableNSObjectSubclassSupport: true, finalHashInto: false)
+            public class TestClass {
+                @Hashed
+                var hashedProperty: String
+            }
+            """
+        } expansion: {
+            """
+            public class TestClass {
+                var hashedProperty: String
+            }
+
+            extension TestClass {
+                public func hash(into hasher: inout Hasher) {
+                    hasher.combine(self.hashedProperty)
+                }
+            }
+
+            extension TestClass {
+                public static func ==(lhs: TestClass, rhs: TestClass) -> Bool {
                     return lhs.hashedProperty == rhs.hashedProperty
                 }
             }
@@ -529,6 +630,99 @@ final class HashableMacroTests: XCTestCase {
             extension TypeWithComputedPropertt {
                 static func ==(lhs: TypeWithComputedPropertt, rhs: TypeWithComputedPropertt) -> Bool {
                     return lhs.hashedProperty == rhs.hashedProperty
+                }
+            }
+            """
+        }
+        #else
+        throw XCTSkip("Macros are only supported when running tests for the host platform")
+        #endif
+    }
+
+    func testComputedPropertyWithExplicitGet() throws {
+        #if canImport(HashableMacroMacros)
+        assertMacro(testMacros) {
+            """
+            @Hashable(_disableNSObjectSubclassSupport: true)
+            struct TypeWithComputedPropertt {
+                @Hashed
+                var hashedProperty: String
+
+                var computedProperty: String {
+                    get {
+                        "computed"
+                    }
+                }
+            }
+            """
+        } expansion: {
+            """
+            struct TypeWithComputedPropertt {
+                var hashedProperty: String
+
+                var computedProperty: String {
+                    get {
+                        "computed"
+                    }
+                }
+            }
+
+            extension TypeWithComputedPropertt {
+                func hash(into hasher: inout Hasher) {
+                    hasher.combine(self.hashedProperty)
+                }
+            }
+
+            extension TypeWithComputedPropertt {
+                static func ==(lhs: TypeWithComputedPropertt, rhs: TypeWithComputedPropertt) -> Bool {
+                    return lhs.hashedProperty == rhs.hashedProperty
+                }
+            }
+            """
+        }
+        #else
+        throw XCTSkip("Macros are only supported when running tests for the host platform")
+        #endif
+    }
+
+    func testStoredPropertyWithDidSet() throws {
+        #if canImport(HashableMacroMacros)
+        assertMacro(testMacros) {
+            """
+            @Hashable(_disableNSObjectSubclassSupport: true)
+            struct TypeWithComputedPropertt {
+                var hashedProperty: String
+
+                var otherHashedProperty: String {
+                    didSet {
+                        // ... do something
+                    }
+                }
+            }
+            """
+        } expansion: {
+            """
+            struct TypeWithComputedPropertt {
+                var hashedProperty: String
+
+                var otherHashedProperty: String {
+                    didSet {
+                        // ... do something
+                    }
+                }
+            }
+
+            extension TypeWithComputedPropertt {
+                func hash(into hasher: inout Hasher) {
+                    hasher.combine(self.hashedProperty)
+                    hasher.combine(self.otherHashedProperty)
+                }
+            }
+
+            extension TypeWithComputedPropertt {
+                static func ==(lhs: TypeWithComputedPropertt, rhs: TypeWithComputedPropertt) -> Bool {
+                    return lhs.hashedProperty == rhs.hashedProperty
+                        && lhs.otherHashedProperty == rhs.otherHashedProperty
                 }
             }
             """
@@ -594,6 +788,452 @@ final class HashableMacroTests: XCTestCase {
             }
             """
         }
+        #else
+        throw XCTSkip("Macros are only supported when running tests for the host platform")
+        #endif
+    }
+
+    func testDirectNSObjectSubclass() throws {
+        #if canImport(HashableMacroMacros)
+        #if canImport(ObjectiveC)
+        assertMacro(testMacros) {
+            """
+            @Hashable(_disableNSObjectSubclassSupport: false)
+            class TestClass: NSObject {
+                @Hashed
+                var hashedProperty: String
+
+                @Hashed
+                var secondHashedProperty: String
+
+                var notHashedProperty: String
+            }
+            """
+        } expansion: {
+            """
+            class TestClass: NSObject {
+                var hashedProperty: String
+                var secondHashedProperty: String
+
+                var notHashedProperty: String
+            }
+
+            extension TestClass {
+                override var hash: Int {
+                    var hasher = Hasher()
+                    hasher.combine(self.hashedProperty)
+                    hasher.combine(self.secondHashedProperty)
+                    return hasher.finalize()
+                }
+            }
+
+            extension TestClass {
+                override func isEqual(_ object: Any?) -> Bool {
+                    guard let object else {
+                        return false
+                    }
+                    guard type(of: self) == type(of: object) else {
+                        return false
+                    }
+                    guard let object = object as? Self else {
+                        return false
+                    }
+                    return self.hashedProperty == object.hashedProperty
+                        && self.secondHashedProperty == object.secondHashedProperty
+                }
+            }
+            """
+        }
+        #else
+        throw XCTSkip("This expansion requires Objective-C")
+        #endif
+        #else
+        throw XCTSkip("Macros are only supported when running tests for the host platform")
+        #endif
+    }
+
+    func testDirectNSObjectSubclass_neverCallSuper() throws {
+        #if canImport(HashableMacroMacros)
+        #if canImport(ObjectiveC)
+        assertMacro(testMacros) {
+            """
+            @Hashable(_disableNSObjectSubclassSupport: false, nsObjectSubclassBehaviour: .neverCallSuper)
+            class TestClass: NSObject {
+                @Hashed
+                var hashedProperty: String
+
+                var notHashedProperty: String
+            }
+            """
+        } expansion: {
+            """
+            class TestClass: NSObject {
+                var hashedProperty: String
+
+                var notHashedProperty: String
+            }
+
+            extension TestClass {
+                override var hash: Int {
+                    var hasher = Hasher()
+                    hasher.combine(self.hashedProperty)
+                    return hasher.finalize()
+                }
+            }
+
+            extension TestClass {
+                override func isEqual(_ object: Any?) -> Bool {
+                    guard let object else {
+                        return false
+                    }
+                    guard type(of: self) == type(of: object) else {
+                        return false
+                    }
+                    guard let object = object as? Self else {
+                        return false
+                    }
+                    return self.hashedProperty == object.hashedProperty
+                }
+            }
+            """
+        }
+        #else
+        throw XCTSkip("This expansion requires Objective-C")
+        #endif
+        #else
+        throw XCTSkip("Macros are only supported when running tests for the host platform")
+        #endif
+    }
+
+    func testDirectNSObjectSubclass_callSuperUnlessDirectSubclass() throws {
+        #if canImport(HashableMacroMacros)
+        #if canImport(ObjectiveC)
+        assertMacro(testMacros) {
+            """
+            @Hashable(_disableNSObjectSubclassSupport: false, nsObjectSubclassBehaviour: .callSuperUnlessDirectSubclass)
+            class TestClass: NSObject {
+                @Hashed
+                var hashedProperty: String
+
+                var notHashedProperty: String
+            }
+            """
+        } expansion: {
+            """
+            class TestClass: NSObject {
+                var hashedProperty: String
+
+                var notHashedProperty: String
+            }
+
+            extension TestClass {
+                override var hash: Int {
+                    var hasher = Hasher()
+                    hasher.combine(self.hashedProperty)
+                    return hasher.finalize()
+                }
+            }
+
+            extension TestClass {
+                override func isEqual(_ object: Any?) -> Bool {
+                    guard let object else {
+                        return false
+                    }
+                    guard type(of: self) == type(of: object) else {
+                        return false
+                    }
+                    guard let object = object as? Self else {
+                        return false
+                    }
+                    return self.hashedProperty == object.hashedProperty
+                }
+            }
+            """
+        }
+        #else
+        throw XCTSkip("This expansion requires Objective-C")
+        #endif
+        #else
+        throw XCTSkip("Macros are only supported when running tests for the host platform")
+        #endif
+    }
+
+    func testDirectNSObjectSubclass_alwaysCallSuper() throws {
+        #if canImport(HashableMacroMacros)
+        #if canImport(ObjectiveC)
+        assertMacro(testMacros) {
+            """
+            @Hashable(_disableNSObjectSubclassSupport: false, nsObjectSubclassBehaviour: .alwaysCallSuper)
+            class TestClass: NSObject {
+                @Hashed
+                var hashedProperty: String
+
+                var notHashedProperty: String
+            }
+            """
+        } expansion: {
+            """
+            class TestClass: NSObject {
+                var hashedProperty: String
+
+                var notHashedProperty: String
+            }
+
+            extension TestClass {
+                override var hash: Int {
+                    var hasher = Hasher()
+                    hasher.combine(super.hash)
+                    hasher.combine(self.hashedProperty)
+                    return hasher.finalize()
+                }
+            }
+
+            extension TestClass {
+                override func isEqual(_ object: Any?) -> Bool {
+                    guard let object else {
+                        return false
+                    }
+                    guard type(of: self) == type(of: object) else {
+                        return false
+                    }
+                    guard super.isEqual(object) else {
+                        return false
+                    }
+                    guard let object = object as? Self else {
+                        return false
+                    }
+                    return self.hashedProperty == object.hashedProperty
+                }
+            }
+            """
+        }
+        #else
+        throw XCTSkip("This expansion requires Objective-C")
+        #endif
+        #else
+        throw XCTSkip("Macros are only supported when running tests for the host platform")
+        #endif
+    }
+
+    func testIndirectNSObjectSubclass() throws {
+        #if canImport(HashableMacroMacros)
+        #if canImport(ObjectiveC)
+        assertMacro(testMacros) {
+            """
+            @Hashable(_disableNSObjectSubclassSupport: false)
+            class TestClass: UIView {
+                @Hashed
+                var hashedProperty: String
+
+                var notHashedProperty: String
+            }
+            """
+        } expansion: {
+            """
+            class TestClass: UIView {
+                var hashedProperty: String
+
+                var notHashedProperty: String
+            }
+
+            extension TestClass {
+                override var hash: Int {
+                    var hasher = Hasher()
+                    hasher.combine(super.hash)
+                    hasher.combine(self.hashedProperty)
+                    return hasher.finalize()
+                }
+            }
+
+            extension TestClass {
+                override func isEqual(_ object: Any?) -> Bool {
+                    guard let object else {
+                        return false
+                    }
+                    guard type(of: self) == type(of: object) else {
+                        return false
+                    }
+                    guard super.isEqual(object) else {
+                        return false
+                    }
+                    guard let object = object as? Self else {
+                        return false
+                    }
+                    return self.hashedProperty == object.hashedProperty
+                }
+            }
+            """
+        }
+        #else
+        throw XCTSkip("This expansion requires Objective-C")
+        #endif
+        #else
+        throw XCTSkip("Macros are only supported when running tests for the host platform")
+        #endif
+    }
+
+    func testIndirectNSObjectSubclass_neverCallSuper() throws {
+        #if canImport(HashableMacroMacros)
+        #if canImport(ObjectiveC)
+        assertMacro(testMacros) {
+            """
+            @Hashable(_disableNSObjectSubclassSupport: false, nsObjectSubclassBehaviour: .neverCallSuper)
+            class TestClass: UIView {
+                @Hashed
+                var hashedProperty: String
+
+                var notHashedProperty: String
+            }
+            """
+        } expansion: {
+            """
+            class TestClass: UIView {
+                var hashedProperty: String
+
+                var notHashedProperty: String
+            }
+
+            extension TestClass {
+                override var hash: Int {
+                    var hasher = Hasher()
+                    hasher.combine(self.hashedProperty)
+                    return hasher.finalize()
+                }
+            }
+
+            extension TestClass {
+                override func isEqual(_ object: Any?) -> Bool {
+                    guard let object else {
+                        return false
+                    }
+                    guard type(of: self) == type(of: object) else {
+                        return false
+                    }
+                    guard let object = object as? Self else {
+                        return false
+                    }
+                    return self.hashedProperty == object.hashedProperty
+                }
+            }
+            """
+        }
+        #else
+        throw XCTSkip("This expansion requires Objective-C")
+        #endif
+        #else
+        throw XCTSkip("Macros are only supported when running tests for the host platform")
+        #endif
+    }
+
+    func testIndirectNSObjectSubclass_callSuperUnlessDirectSubclass() throws {
+        #if canImport(HashableMacroMacros)
+        #if canImport(ObjectiveC)
+        assertMacro(testMacros) {
+            """
+            @Hashable(_disableNSObjectSubclassSupport: false, nsObjectSubclassBehaviour: .callSuperUnlessDirectSubclass)
+            class TestClass: UIView {
+                @Hashed
+                var hashedProperty: String
+
+                var notHashedProperty: String
+            }
+            """
+        } expansion: {
+            """
+            class TestClass: UIView {
+                var hashedProperty: String
+
+                var notHashedProperty: String
+            }
+
+            extension TestClass {
+                override var hash: Int {
+                    var hasher = Hasher()
+                    hasher.combine(super.hash)
+                    hasher.combine(self.hashedProperty)
+                    return hasher.finalize()
+                }
+            }
+
+            extension TestClass {
+                override func isEqual(_ object: Any?) -> Bool {
+                    guard let object else {
+                        return false
+                    }
+                    guard type(of: self) == type(of: object) else {
+                        return false
+                    }
+                    guard super.isEqual(object) else {
+                        return false
+                    }
+                    guard let object = object as? Self else {
+                        return false
+                    }
+                    return self.hashedProperty == object.hashedProperty
+                }
+            }
+            """
+        }
+        #else
+        throw XCTSkip("This expansion requires Objective-C")
+        #endif
+        #else
+        throw XCTSkip("Macros are only supported when running tests for the host platform")
+        #endif
+    }
+
+    func testIndirectNSObjectSubclass_alwaysCallSuper() throws {
+        #if canImport(HashableMacroMacros)
+        #if canImport(ObjectiveC)
+        assertMacro(testMacros) {
+            """
+            @Hashable(_disableNSObjectSubclassSupport: false, nsObjectSubclassBehaviour: .alwaysCallSuper)
+            class TestClass: UIView {
+                @Hashed
+                var hashedProperty: String
+
+                var notHashedProperty: String
+            }
+            """
+        } expansion: {
+            """
+            class TestClass: UIView {
+                var hashedProperty: String
+
+                var notHashedProperty: String
+            }
+
+            extension TestClass {
+                override var hash: Int {
+                    var hasher = Hasher()
+                    hasher.combine(super.hash)
+                    hasher.combine(self.hashedProperty)
+                    return hasher.finalize()
+                }
+            }
+
+            extension TestClass {
+                override func isEqual(_ object: Any?) -> Bool {
+                    guard let object else {
+                        return false
+                    }
+                    guard type(of: self) == type(of: object) else {
+                        return false
+                    }
+                    guard super.isEqual(object) else {
+                        return false
+                    }
+                    guard let object = object as? Self else {
+                        return false
+                    }
+                    return self.hashedProperty == object.hashedProperty
+                }
+            }
+            """
+        }
+        #else
+        throw XCTSkip("This expansion requires Objective-C")
+        #endif
         #else
         throw XCTSkip("Macros are only supported when running tests for the host platform")
         #endif
