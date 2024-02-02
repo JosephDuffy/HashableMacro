@@ -1,4 +1,7 @@
 import Foundation
+#if canImport(ObjectiveC)
+import HashableMacroFoundation
+#endif
 #if canImport(SwiftSyntax510)
 import SwiftDiagnostics
 #else

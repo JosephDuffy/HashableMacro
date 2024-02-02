@@ -1,5 +1,6 @@
 #if canImport(ObjectiveC)
 import ObjectiveC
+import HashableMacroFoundation
 
 /// A macro that adds `Hashable` conformance to the type it is attached to. The
 /// `==` function and `hash(into:)` functions will use the same properties. To
@@ -19,18 +20,6 @@ public macro Hashable(
     finalHashInto: Bool = true,
     nsObjectSubclassBehaviour: NSObjectSubclassBehaviour = .callSuperUnlessDirectSubclass
 ) = #externalMacro(module: "HashableMacroMacros", type: "HashableMacro")
-
-public enum NSObjectSubclassBehaviour: Sendable {
-    /// Never call `super.isEqual(to:)` and do not incorporate `super.hash`.
-    case neverCallSuper
-
-    /// Call `super.isEqual(to:)` and incorporate `super.hash` only when the
-    /// type is not a direct subclass of `NSObject`.
-    case callSuperUnlessDirectSubclass
-
-    /// Always call `super.isEqual(to:)` and incorporate `super.hash`.
-    case alwaysCallSuper
-}
 #else
 /// A macro that adds `Hashable` conformance to the type it is attached to. The
 /// `==` function and `hash(into:)` functions will use the same properties. To

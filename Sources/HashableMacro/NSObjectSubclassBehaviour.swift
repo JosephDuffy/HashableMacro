@@ -1,0 +1,3 @@
+import HashableMacroFoundation
+
+public typealias NSObjectSubclassBehaviour = HashableMacroFoundation.NSObjectSubclassBehaviour

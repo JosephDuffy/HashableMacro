@@ -1,5 +1,7 @@
 #if canImport(ObjectiveC)
-enum NSObjectSubclassBehaviour: Sendable {
+/// The behaviour applied to the `Hashable` implementation of a type that
+/// conforms to `NSObjectProtocol`.
+public enum NSObjectSubclassBehaviour: Sendable {
     /// Never call `super.isEqual(to:)` and do not incorporate `super.hash`.
     case neverCallSuper
 
