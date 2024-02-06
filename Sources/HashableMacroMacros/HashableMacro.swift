@@ -578,6 +578,103 @@ public struct HashableMacro: ExtensionMacro {
         return DeclSyntax(equalsFunction)
     }
 
+    #if canImport(ObjectiveC)
+    private static func expansionForHashProperty(
+        of node: AttributeSyntax,
+        providingMembersOf declaration: some DeclGroupSyntax,
+        in context: some MacroExpansionContext,
+        propertiesToHash: [TokenSyntax]
+    ) -> DeclSyntax {
+        let baseModifiers = declaration.modifiers.filter({ modifier in
+            switch (modifier.name.tokenKind) {
+            case .keyword(.public):
+                return true
+            case .keyword(.internal):
+                return true
+            case .keyword(.fileprivate):
+                return true
+            case .keyword(.private):
+                // The added functions should never be private
+                return false
+            default:
+                return false
+            }
+        })
+
+        var hashPropertyModifiers = baseModifiers
+        hashPropertyModifiers.append(
+            DeclModifierSyntax(name: .keyword(.override))
+        )
+
+        let hashPropertyDeclaration = VariableDeclSyntax(
+            modifiers: hashPropertyModifiers,
+            bindingSpecifier: .keyword(.var),
+            bindings: PatternBindingListSyntax([
+                PatternBindingSyntax(
+                    pattern: IdentifierPatternSyntax(identifier: .identifier("hash")),
+                    typeAnnotation: TypeAnnotationSyntax(
+                        type: IdentifierTypeSyntax(name: .identifier("Int"))
+                    ),
+                    accessorBlock: AccessorBlockSyntax(
+                        accessors: .getter(CodeBlockItemListSyntax(itemsBuilder: {
+                            let havePropertiesToHash = !propertiesToHash.isEmpty
+
+                            VariableDeclSyntax(
+                                bindingSpecifier: .keyword(havePropertiesToHash ? .var : .let),
+                                bindings: PatternBindingListSyntax([
+                                    PatternBindingSyntax(
+                                        pattern: IdentifierPatternSyntax(identifier: .identifier("hasher")),
+                                        initializer: InitializerClauseSyntax(
+                                            value: FunctionCallExprSyntax(
+                                                calledExpression: DeclReferenceExprSyntax(
+                                                    baseName: TokenSyntax.identifier("Hasher")
+                                                ),
+                                                leftParen: .leftParenToken(),
+                                                arguments: [],
+                                                rightParen: .rightParenToken()
+                                            )
+                                        )
+                                    )
+                                ])
+                            )
+
+                            for propertyToken in propertiesToHash {
+                                FunctionCallExprSyntax(
+                                    callee: MemberAccessExprSyntax(
+                                        base: DeclReferenceExprSyntax(baseName: "hasher"),
+                                        name: .identifier("combine")
+                                    ),
+                                    argumentList: {
+                                        LabeledExprSyntax(
+                                            expression: MemberAccessExprSyntax(
+                                                base: DeclReferenceExprSyntax(baseName: .keyword(.`self`)),
+                                                name: propertyToken
+                                            )
+                                        )
+                                    }
+                                )
+                            }
+
+                            ReturnStmtSyntax(
+                                expression: FunctionCallExprSyntax(
+                                    calledExpression: MemberAccessExprSyntax(
+                                        base: DeclReferenceExprSyntax(baseName: .identifier("hasher")),
+                                        name: .identifier("finalize")
+                                    ),
+                                    leftParen: .leftParenToken(),
+                                    arguments: [],
+                                    rightParen: .rightParenToken()
+                                )
+                            )
+                        }))
+                    )
+                )
+            ])
+        )
+
+        return DeclSyntax(hashPropertyDeclaration)
+    }
+
     private static func expansionForIsEqual(
         of node: AttributeSyntax,
         providingMembersOf declaration: ClassDeclSyntax,
@@ -816,102 +913,7 @@ public struct HashableMacro: ExtensionMacro {
             DeclSyntax(isEqualTypedFunction),
         ]
     }
-
-    private static func expansionForHashProperty(
-        of node: AttributeSyntax,
-        providingMembersOf declaration: some DeclGroupSyntax,
-        in context: some MacroExpansionContext,
-        propertiesToHash: [TokenSyntax]
-    ) -> DeclSyntax {
-        let baseModifiers = declaration.modifiers.filter({ modifier in
-            switch (modifier.name.tokenKind) {
-            case .keyword(.public):
-                return true
-            case .keyword(.internal):
-                return true
-            case .keyword(.fileprivate):
-                return true
-            case .keyword(.private):
-                // The added functions should never be private
-                return false
-            default:
-                return false
-            }
-        })
-
-        var hashPropertyModifiers = baseModifiers
-        hashPropertyModifiers.append(
-            DeclModifierSyntax(name: .keyword(.override))
-        )
-
-        let hashPropertyDeclaration = VariableDeclSyntax(
-            modifiers: hashPropertyModifiers,
-            bindingSpecifier: .keyword(.var),
-            bindings: PatternBindingListSyntax([
-                PatternBindingSyntax(
-                    pattern: IdentifierPatternSyntax(identifier: .identifier("hash")),
-                    typeAnnotation: TypeAnnotationSyntax(
-                        type: IdentifierTypeSyntax(name: .identifier("Int"))
-                    ),
-                    accessorBlock: AccessorBlockSyntax(
-                        accessors: .getter(CodeBlockItemListSyntax(itemsBuilder: {
-                            let havePropertiesToHash = !propertiesToHash.isEmpty
-
-                            VariableDeclSyntax(
-                                bindingSpecifier: .keyword(havePropertiesToHash ? .var : .let),
-                                bindings: PatternBindingListSyntax([
-                                    PatternBindingSyntax(
-                                        pattern: IdentifierPatternSyntax(identifier: .identifier("hasher")),
-                                        initializer: InitializerClauseSyntax(
-                                            value: FunctionCallExprSyntax(
-                                                calledExpression: DeclReferenceExprSyntax(
-                                                    baseName: TokenSyntax.identifier("Hasher")
-                                                ),
-                                                leftParen: .leftParenToken(),
-                                                arguments: [],
-                                                rightParen: .rightParenToken()
-                                            )
-                                        )
-                                    )
-                                ])
-                            )
-
-                            for propertyToken in propertiesToHash {
-                                FunctionCallExprSyntax(
-                                    callee: MemberAccessExprSyntax(
-                                        base: DeclReferenceExprSyntax(baseName: "hasher"),
-                                        name: .identifier("combine")
-                                    ),
-                                    argumentList: {
-                                        LabeledExprSyntax(
-                                            expression: MemberAccessExprSyntax(
-                                                base: DeclReferenceExprSyntax(baseName: .keyword(.`self`)),
-                                                name: propertyToken
-                                            )
-                                        )
-                                    }
-                                )
-                            }
-
-                            ReturnStmtSyntax(
-                                expression: FunctionCallExprSyntax(
-                                    calledExpression: MemberAccessExprSyntax(
-                                        base: DeclReferenceExprSyntax(baseName: .identifier("hasher")),
-                                        name: .identifier("finalize")
-                                    ),
-                                    leftParen: .leftParenToken(),
-                                    arguments: [],
-                                    rightParen: .rightParenToken()
-                                )
-                            )
-                        }))
-                    )
-                )
-            ])
-        )
-
-        return DeclSyntax(hashPropertyDeclaration)
-    }
+    #endif
 }
 
 private struct HashableMacroDiagnosticMessage: DiagnosticMessage, Error {
