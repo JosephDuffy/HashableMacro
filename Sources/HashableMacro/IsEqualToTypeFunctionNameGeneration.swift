@@ -6,3 +6,4 @@ public typealias IsEqualToTypeFunctionNameGeneration = HashableMacroFoundation.I
 #else
 #warning("ObjectiveC should be importable when HashableMacroFoundation can be imported")
 #endif
+#endif
