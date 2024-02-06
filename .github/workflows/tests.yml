@@ -127,7 +127,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: .build
-          key: ${{ runner.os }}-swift_${{ matrix.swift }}-swiftpm-deps-${{ github.ref }}-${{ hashFiles('**/Package.resolved') }}
+          key: ${{ runner.os }}-swift_${{ matrix.swift }}-swiftpm-deps-${{ github.ref }}-${{ hashFiles('Package.resolved') }}
           restore-keys: |
             ${{ runner.os }}-swift_${{ matrix.swift }}-swiftpm-deps-${{ github.ref }}-
             ${{ runner.os }}-swift_${{ matrix.swift }}-swiftpm-deps-main-
