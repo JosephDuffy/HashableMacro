@@ -6,6 +6,10 @@ on:
     branches:
       - "**:**" # PRs from forks have a prefix with `owner:`
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   macos_tests:
     name: macOS Tests (SwiftPM, Xcode ${{ matrix.xcode }})
