@@ -81,16 +81,6 @@ jobs:
 
       - run: mint bootstrap
 
-      - name: Cache SwiftPM
-        uses: actions/cache@v3
-        with:
-          path: .build
-          key: ${{ runner.os }}-xcode_${{ matrix.xcode }}-swiftpm-${{ github.ref }}-${{ hashFiles('**/Package.resolved') }}
-          restore-keys: |
-            ${{ runner.os }}-xcode_${{ matrix.xcode }}-swiftpm-${{ github.ref }}-
-            ${{ runner.os }}-xcode_${{ matrix.xcode }}-swiftpm-main-
-            ${{ runner.os }}-xcode_${{ matrix.xcode }}-swiftpm-
-
       - name: Cache DerivedData
         uses: actions/cache@v3
         with:
