@@ -66,7 +66,7 @@ struct MyStruct {
 
     // Implicitly excluded from `Hashable` conformance
     var computedProperty: Bool {
-      intProperty > 0
+        intProperty > 0
     }
 }
 ```
@@ -75,9 +75,27 @@ One (fairly minor) advantage of this over adding `Hashable` conformance without 
 
 ## `NSObject` Support
 
-When a type inherits from `NSObject` it should override `hash` and `isEqual(_:)`, not `hash(into:)` and `==`. `HashableMacro` detects when it is attached to a type conforming to `NSObjectProtocol` and will provide the `hash` property and `isEqual(_:)` function instead.
+When a type implements `NSObjectProtocol` (e.g. it inherits from `NSObject`) it should override `hash` and `isEqual(_:)`, not `hash(into:)` and `==(lhs:rhs:)`. `@Hashable` detects when it is attached to a type conforming to `NSObjectProtocol` and will provide the `hash` property and `isEqual(_:)` function instead.
 
-By default `HashableMacro` will incorporate `super.isEqual(_:)` and `super.hash`, unless the type is a direct subclass of `NSObject`. This behaviour can be changed with the `nsObjectSubclassBehaviour` parameter.
+`@Hashable` will also provide an `isEqual(to:)` function that is takes a parameter that matches `Self`, which will have an appropriately named Objective-C function.
+
+```swift
+@Hashable
+final class Person: NSObject {
+    // ... properties with @Hashed
+}
+
+extension Person {
+    func isEqual(_ object: Any?) -> Bool {
+        // ... implementation
+    }
+    
+    @objc(isEqualToPerson:)
+    func isEqual(to person: Person) -> Bool {
+        // ... implementation
+    }
+}
+```
 
 ## `final` `hash(into:)` Function
 

@@ -164,7 +164,7 @@ public struct HashableMacro: ExtensionMacro {
         }
         #endif
         if isNSObjectSubclass {
-            guard let namedDeclaration = declaration as? ClassDeclSyntax else {
+            guard let classDeclaration = declaration as? ClassDeclSyntax else {
                 throw HashableMacroDiagnosticMessage(
                     id: "nsobject-subclass-not-class",
                     message: "This type conforms to 'NSObjectProtocol' but is not a class",
@@ -172,34 +172,94 @@ public struct HashableMacro: ExtensionMacro {
                 )
             }
 
-            var nsObjectSubclassBehaviour: NSObjectSubclassBehaviour = .callSuperUnlessDirectSubclass
-            var didIncludeNSObjectSubclassBehaviourParameter = false
+            var isEqualToTypeFunctionName: IsEqualToTypeFunctionNameGeneration = .automatic
 
             if let arguments = node.arguments?.as(LabeledExprListSyntax.self) {
                 for argument in arguments {
                     switch argument.label?.trimmedDescription {
-                    case "nsObjectSubclassBehaviour":
-                        guard let expression = argument.expression.as(MemberAccessExprSyntax.self) else {
-                            throw HashableMacroDiagnosticMessage(
-                                id: "unknown-nsObjectSubclassBehaviour-type",
-                                message: "'nsObjectSubclassBehaviour' parameter was not of the expected type",
-                                severity: .error
-                            )
-                        }
+                    case "isEqualToTypeFunctionName":
+                        if let expression = argument.expression.as(MemberAccessExprSyntax.self) {
+                            switch expression.declName.baseName.tokenKind {
+                            case .identifier("automatic"):
+                                isEqualToTypeFunctionName = .automatic
+                            default:
+                                throw HashableMacroDiagnosticMessage(
+                                    id: "unknown-isEqualToTypeFunctionName-name",
+                                    message: "'\(expression.declName.baseName)' is not a known value for `IsEqualToTypeFunctionNameGeneration`",
+                                    severity: .error
+                                )
+                            }
+                        } else if
+                            let functionExpression = argument
+                                .expression
+                                .as(FunctionCallExprSyntax.self),
+                            let memberAccessExpression = functionExpression
+                                .calledExpression
+                                .as(MemberAccessExprSyntax.self)
+                        {
+                            switch memberAccessExpression.declName.baseName.tokenKind {
+                            case .identifier("custom"):
+                                guard functionExpression.arguments.count == 1 else {
+                                    throw HashableMacroDiagnosticMessage(
+                                        id: "invalid-isEqualToTypeFunctionName-argument",
+                                        message: "Only 1 argument is supported for 'custom'",
+                                        severity: .error
+                                    )
+                                }
+                                let nameArgument = functionExpression.arguments.first!
 
-                        didIncludeNSObjectSubclassBehaviourParameter = true
+                                guard let stringExpression = nameArgument.expression.as(StringLiteralExprSyntax.self) else {
+                                    throw HashableMacroDiagnosticMessage(
+                                        id: "invalid-isEqualToTypeFunctionName-custom-argument",
+                                        message: "Only option for 'custom' must be a string",
+                                        severity: .error
+                                    )
+                                }
 
-                        switch expression.declName.baseName.tokenKind {
-                        case .identifier("neverCallSuper"):
-                            nsObjectSubclassBehaviour = .neverCallSuper
-                        case .identifier("callSuperUnlessDirectSubclass"):
-                            nsObjectSubclassBehaviour = .callSuperUnlessDirectSubclass
-                        case .identifier("alwaysCallSuper"):
-                            nsObjectSubclassBehaviour = .alwaysCallSuper
-                        default:
+                                let customName = "\(stringExpression.segments)"
+
+                                if !customName.hasSuffix(":") {
+                                    var newArgument = argument
+                                    var functionExpression = functionExpression
+                                    functionExpression.arguments[functionExpression.arguments.indices.first!].expression = ExprSyntax(StringLiteralExprSyntax(content: customName + ":"))
+                                    newArgument.expression = ExprSyntax(functionExpression)
+
+                                    let diagnostic = Diagnostic(
+                                        node: Syntax(node),
+                                        message: HashableMacroDiagnosticMessage(
+                                            id: "missing-colon-for-custom-name",
+                                            message: "Custom Objective-C function name must end with a colon.",
+                                            severity: .error
+                                        ),
+                                        fixIt: FixIt(
+                                            message: HashableMacroFixItMessage(
+                                                id: "add-missing-colon-to-custom-name",
+                                                message: "Add ':'"
+                                            ),
+                                            changes: [
+                                                FixIt.Change.replace(
+                                                    oldNode: Syntax(argument),
+                                                    newNode: Syntax(newArgument)
+                                                )
+                                            ]
+                                        )
+                                    )
+                                    context.diagnose(diagnostic)
+                                }
+
+                                isEqualToTypeFunctionName = .custom(customName)
+                            default:
+                                throw HashableMacroDiagnosticMessage(
+                                    id: "unknown-isEqualToTypeFunctionName-name",
+                                    message: "'\(memberAccessExpression.declName.baseName)' is not a known value for `IsEqualToTypeFunctionNameGeneration`",
+                                    severity: .error
+                                )
+                            }
+
+                        } else {
                             throw HashableMacroDiagnosticMessage(
-                                id: "unknown-nsObjectSubclassBehaviour-name",
-                                message: "'\(expression.declName.baseName)' is not a known value for `NSObjectSubclassBehaviour`; \(expression.declName.baseName.debugDescription))",
+                                id: "unknown-isEqualToTypeFunctionName-type",
+                                message: "'isEqualToTypeFunctionName' parameter was not of the expected type",
                                 severity: .error
                             )
                         }
@@ -207,63 +267,6 @@ public struct HashableMacro: ExtensionMacro {
                         break
                     }
                 }
-            }
-
-            if !didIncludeNSObjectSubclassBehaviourParameter {
-                func fixItWithBehavior(_ behavior: String) -> FixIt {
-                    var arguments: LabeledExprListSyntax = node.arguments?.as(LabeledExprListSyntax.self) ?? []
-                    arguments.append(
-                        LabeledExprSyntax(
-                            label: "nsObjectSubclassBehaviour",
-                            expression: MemberAccessExprSyntax(
-                                declName: DeclReferenceExprSyntax(
-                                    baseName: .identifier(behavior)
-                                )
-                            )
-                        )
-                    )
-                    var newNode = node
-                    newNode.leftParen = .leftParenToken()
-                    newNode.arguments = .argumentList(arguments)
-                    newNode.rightParen = .rightParenToken()
-                    return FixIt(
-                        message: HashableMacroFixItMessage(
-                            id: "missing-nsObjectSubclassBehaviour-for-nsobject-subclass-add-\(behavior)",
-                            message: "Add nsObjectSubclassBehaviour: .\(behavior)"
-                        ),
-                        changes: [
-                            FixIt.Change.replace(
-                                oldNode: Syntax(node),
-                                newNode: Syntax(newNode)
-                            )
-                        ]
-                    )
-                }
-                let diagnostic = Diagnostic(
-                    node: Syntax(node),
-                    message: HashableMacroDiagnosticMessage(
-                        id: "missing-nsObjectSubclassBehaviour-for-nsobject-subclass",
-                        message: "The 'nsObjectSubclassBehaviour' parameter is required when @Hashable is applied to a type conforming to 'NSObjectProtocol'.",
-                        severity: .warning
-                    ),
-                    fixIts: [
-                        fixItWithBehavior("callSuperUnlessDirectSubclass"),
-                        fixItWithBehavior("neverCallSuper"),
-                        fixItWithBehavior("alwaysCallSuper"),
-                    ]
-                )
-                context.diagnose(diagnostic)
-            }
-
-            let doIncorporateSuper: Bool
-
-            switch nsObjectSubclassBehaviour {
-            case .neverCallSuper:
-                doIncorporateSuper = false
-            case .callSuperUnlessDirectSubclass:
-                doIncorporateSuper = namedDeclaration.inheritanceClause?.inheritedTypes.first?.type.trimmedDescription != "NSObject"
-            case .alwaysCallSuper:
-                doIncorporateSuper = true
             }
 
             let hashPropertyExtension = ExtensionDeclSyntax(
@@ -274,8 +277,7 @@ public struct HashableMacro: ExtensionMacro {
                             of: node,
                             providingMembersOf: declaration,
                             in: context,
-                            propertiesToHash: propertiesToHash,
-                            doIncorporateSuper: doIncorporateSuper
+                            propertiesToHash: propertiesToHash
                         )
                     })
                 )
@@ -283,15 +285,15 @@ public struct HashableMacro: ExtensionMacro {
             let isEqualImplementationExtension = ExtensionDeclSyntax(
                 extendedType: type,
                 memberBlock: MemberBlockSyntax(
-                    members: MemberBlockItemListSyntax(itemsBuilder: {
+                    members: MemberBlockItemListSyntax(
                         expansionForIsEqual(
                             of: node,
-                            providingMembersOf: declaration,
+                            providingMembersOf: classDeclaration,
                             in: context,
                             propertiesToHash: propertiesToHash,
-                            doIncorporateSuper: doIncorporateSuper
-                        )
-                    })
+                            isEqualToTypeFunctionName: isEqualToTypeFunctionName
+                        ).map { MemberBlockItemSyntax(decl: $0) }
+                    )
                 )
             )
             protocolExtensions.append(hashPropertyExtension)
@@ -370,7 +372,8 @@ public struct HashableMacro: ExtensionMacro {
 
         if let arguments = node.arguments?.as(LabeledExprListSyntax.self) {
             for argument in arguments {
-                switch argument.label?.trimmed.text {
+                guard let label = argument.label else { continue }
+                switch label.trimmed.text {
                 case "finalHashInto":
                     guard let expression = argument.expression.as(BooleanLiteralExprSyntax.self) else { continue }
                     switch expression.literal.tokenKind {
@@ -577,18 +580,14 @@ public struct HashableMacro: ExtensionMacro {
 
     private static func expansionForIsEqual(
         of node: AttributeSyntax,
-        providingMembersOf declaration: some DeclGroupSyntax,
+        providingMembersOf declaration: ClassDeclSyntax,
         in context: some MacroExpansionContext,
         propertiesToHash: [TokenSyntax],
-        doIncorporateSuper: Bool
-    ) -> DeclSyntax {
+        isEqualToTypeFunctionName: IsEqualToTypeFunctionNameGeneration
+    ) -> [DeclSyntax] {
         let baseModifiers = declaration.modifiers.filter({ modifier in
             switch (modifier.name.tokenKind) {
-            case .keyword(.public):
-                return true
-            case .keyword(.internal):
-                return true
-            case .keyword(.fileprivate):
+            case .keyword(.public), .keyword(.internal), .keyword(.fileprivate), .keyword(.open):
                 return true
             case .keyword(.private):
                 // The added functions should never be private
@@ -597,21 +596,6 @@ public struct HashableMacro: ExtensionMacro {
                 return false
             }
         })
-
-        let isEqualFunctionSignature = FunctionSignatureSyntax(
-            parameterClause: FunctionParameterClauseSyntax(
-                parameters: [
-                    FunctionParameterSyntax(
-                        firstName: .identifier("_"),
-                        secondName: .identifier("object"),
-                        type: OptionalTypeSyntax(wrappedType: "Any" as TypeSyntax)
-                    )
-                ]
-            ),
-            returnClause: ReturnClauseSyntax(
-                type: IdentifierTypeSyntax(name: .identifier("Bool"))
-            )
-        )
 
         var comparisons: InfixOperatorExprSyntax?
 
@@ -652,7 +636,7 @@ public struct HashableMacro: ExtensionMacro {
             }
         }
 
-        let isEqualBody = CodeBlockSyntax(
+        let isEqualAnyBody = CodeBlockSyntax(
             statements: CodeBlockItemListSyntax(itemsBuilder: {
                 GuardStmtSyntax(
                     conditions: ConditionElementListSyntax {
@@ -660,6 +644,15 @@ public struct HashableMacro: ExtensionMacro {
                             bindingSpecifier: .keyword(.let),
                             pattern: IdentifierPatternSyntax(
                                 identifier: .identifier("object")
+                            ),
+                            initializer: InitializerClauseSyntax(
+                                value: AsExprSyntax(
+                                    expression: DeclReferenceExprSyntax(baseName: "object"),
+                                    questionOrExclamationMark: .postfixQuestionMarkToken(),
+                                    type: IdentifierTypeSyntax(
+                                        name: declaration.name
+                                    )
+                                )
                             )
                         )
                     },
@@ -670,6 +663,7 @@ public struct HashableMacro: ExtensionMacro {
                         )
                     }
                 )
+
                 GuardStmtSyntax(
                     conditions: ConditionElementListSyntax {
                         InfixOperatorExprSyntax(
@@ -716,59 +710,30 @@ public struct HashableMacro: ExtensionMacro {
                     }
                 )
 
-                if doIncorporateSuper {
-                    GuardStmtSyntax(
-                        conditions: ConditionElementListSyntax {
-                            FunctionCallExprSyntax(
-                                calledExpression: MemberAccessExprSyntax(
-                                    base: SuperExprSyntax(),
-                                    name: .identifier("isEqual")
-                                ),
-                                leftParen: .leftParenToken(),
-                                arguments: [
-                                    LabeledExprSyntax(
-                                        expression: DeclReferenceExprSyntax(
-                                            baseName: .identifier("object")
-                                        )
-                                    )
-                                ],
-                                rightParen: .rightParenToken()
-                            )
-                        },
-                        bodyBuilder: {
-                            ReturnStmtSyntax(
-                                leadingTrivia: .spaces(4),
-                                expression: BooleanLiteralExprSyntax(booleanLiteral: false)
-                            )
-                        }
-                    )
-                }
-                if let comparisons {
-                    GuardStmtSyntax(
-                        conditions: ConditionElementListSyntax {
-                            OptionalBindingConditionSyntax(
-                                bindingSpecifier: .keyword(.let),
-                                pattern: IdentifierPatternSyntax(
-                                    identifier: .identifier("object")
-                                ),
-                                initializer: InitializerClauseSyntax(
-                                    value: AsExprSyntax(
-                                        expression: DeclReferenceExprSyntax(baseName: "object"),
-                                        questionOrExclamationMark: .postfixQuestionMarkToken(),
-                                        type: IdentifierTypeSyntax(
-                                            name: .keyword(.`Self`)
-                                        )
-                                    )
+                ReturnStmtSyntax(
+                    expression: FunctionCallExprSyntax(
+                        calledExpression: MemberAccessExprSyntax(
+                            base: DeclReferenceExprSyntax(baseName: .keyword(.`self`)),
+                            declName: DeclReferenceExprSyntax(baseName: .identifier("isEqual"))
+                        ),
+                        leftParen: .leftParenToken(),
+                        arguments: [
+                            LabeledExprSyntax(
+                                label: "to",
+                                expression: DeclReferenceExprSyntax(
+                                    baseName: .identifier("object")
                                 )
                             )
-                        },
-                        bodyBuilder: {
-                            ReturnStmtSyntax(
-                                leadingTrivia: .spaces(4),
-                                expression: BooleanLiteralExprSyntax(booleanLiteral: false)
-                            )
-                        }
+                        ],
+                        rightParen: .rightParenToken()
                     )
+                )
+            })
+        )
+
+        let isEqualTypedBody = CodeBlockSyntax(
+            statements: CodeBlockItemListSyntax(itemsBuilder: {
+                if let comparisons {
                     ReturnStmtSyntax(
                         expression: comparisons
                     )
@@ -785,22 +750,78 @@ public struct HashableMacro: ExtensionMacro {
             DeclModifierSyntax(name: .keyword(.override))
         )
 
-        let equalsFunction = FunctionDeclSyntax(
+        let isEqualAnyFunction = FunctionDeclSyntax(
             modifiers: equalsFunctionModifiers,
             name: .identifier("isEqual"),
-            signature: isEqualFunctionSignature,
-            body: isEqualBody
+            signature: FunctionSignatureSyntax(
+                parameterClause: FunctionParameterClauseSyntax(
+                    parameters: [
+                        FunctionParameterSyntax(
+                            firstName: .identifier("_"),
+                            secondName: .identifier("object"),
+                            type: OptionalTypeSyntax(wrappedType: "Any" as TypeSyntax)
+                        )
+                    ]
+                ),
+                returnClause: ReturnClauseSyntax(
+                    type: IdentifierTypeSyntax(name: .identifier("Bool"))
+                )
+            ),
+            body: isEqualAnyBody
         )
 
-        return DeclSyntax(equalsFunction)
+        let objectiveCName: TokenSyntax
+        switch isEqualToTypeFunctionName {
+        case .automatic:
+            objectiveCName = .identifier("isEqualTo\(declaration.name.trimmed):")
+        case .custom(let customName):
+            objectiveCName = .identifier(customName)
+        }
+
+        let isEqualTypedFunction = FunctionDeclSyntax(
+            attributes: AttributeListSyntax {
+                .attribute(
+                    AttributeSyntax(
+                        attributeName: IdentifierTypeSyntax(name: .identifier("objc")),
+                        leftParen: .leftParenToken(),
+                        arguments: .objCName([
+                            ObjCSelectorPieceSyntax(name: objectiveCName),
+                        ]),
+                        rightParen: .rightParenToken(),
+                        trailingTrivia: .newline
+                    )
+                )
+            },
+            modifiers: baseModifiers,
+            name: .identifier("isEqual"),
+            signature: FunctionSignatureSyntax(
+                parameterClause: FunctionParameterClauseSyntax(
+                    parameters: [
+                        FunctionParameterSyntax(
+                            firstName: .identifier("to"),
+                            secondName: .identifier("object"),
+                            type: IdentifierTypeSyntax(name: declaration.name)
+                        )
+                    ]
+                ),
+                returnClause: ReturnClauseSyntax(
+                    type: IdentifierTypeSyntax(name: .identifier("Bool"))
+                )
+            ),
+            body: isEqualTypedBody
+        )
+
+        return [
+            DeclSyntax(isEqualAnyFunction),
+            DeclSyntax(isEqualTypedFunction),
+        ]
     }
 
     private static func expansionForHashProperty(
         of node: AttributeSyntax,
         providingMembersOf declaration: some DeclGroupSyntax,
         in context: some MacroExpansionContext,
-        propertiesToHash: [TokenSyntax],
-        doIncorporateSuper: Bool
+        propertiesToHash: [TokenSyntax]
     ) -> DeclSyntax {
         let baseModifiers = declaration.modifiers.filter({ modifier in
             switch (modifier.name.tokenKind) {
@@ -834,7 +855,7 @@ public struct HashableMacro: ExtensionMacro {
                     ),
                     accessorBlock: AccessorBlockSyntax(
                         accessors: .getter(CodeBlockItemListSyntax(itemsBuilder: {
-                            let havePropertiesToHash = doIncorporateSuper || !propertiesToHash.isEmpty
+                            let havePropertiesToHash = !propertiesToHash.isEmpty
 
                             VariableDeclSyntax(
                                 bindingSpecifier: .keyword(havePropertiesToHash ? .var : .let),
@@ -854,23 +875,6 @@ public struct HashableMacro: ExtensionMacro {
                                     )
                                 ])
                             )
-
-                            if doIncorporateSuper {
-                                FunctionCallExprSyntax(
-                                    callee: MemberAccessExprSyntax(
-                                        base: DeclReferenceExprSyntax(baseName: "hasher"),
-                                        name: .identifier("combine")
-                                    ),
-                                    argumentList: {
-                                        LabeledExprSyntax(
-                                            expression: MemberAccessExprSyntax(
-                                                base: DeclReferenceExprSyntax(baseName: .keyword(.super)),
-                                                name: .identifier("hash")
-                                            )
-                                        )
-                                    }
-                                )
-                            }
 
                             for propertyToken in propertiesToHash {
                                 FunctionCallExprSyntax(

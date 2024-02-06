@@ -1,0 +1,3 @@
+import HashableMacroFoundation
+
+public typealias IsEqualToTypeFunctionNameGeneration = HashableMacroFoundation.IsEqualToTypeFunctionNameGeneration
