@@ -85,10 +85,9 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ~/Library/Developer/Xcode/DerivedData
-          key: ${{ runner.os }}-xcode_${{ matrix.xcode }}-derived_data-${{ github.ref }}-${{ hashFiles('**/Package.resolved') }}
+          key: ${{ runner.os }}-xcode_${{ matrix.xcode }}-derived_data-${{ github.ref }}
           restore-keys: |
-            ${{ runner.os }}-xcode_${{ matrix.xcode }}-derived_data-${{ github.ref }}-
-            ${{ runner.os }}-xcode_${{ matrix.xcode }}-derived_data-main-
+            ${{ runner.os }}-xcode_${{ matrix.xcode }}-derived_data-main
             ${{ runner.os }}-xcode_${{ matrix.xcode }}-derived_data-
 
       - name: Run Tests
