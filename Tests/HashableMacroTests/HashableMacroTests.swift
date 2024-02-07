@@ -768,6 +768,51 @@ final class HashableMacroTests: XCTestCase {
         #endif
     }
 
+    // MARK: - Edge cases
+
+    func testPropertyAfterIfConfig() throws {
+        // The `#if os(macOS)` will be parsed an attribute of the
+        // `notHashedProperty` property.
+        #if canImport(HashableMacroMacros)
+        assertMacro(testMacros) {
+            """
+            @Hashable(_disableNSObjectSubclassSupport: true)
+            struct Test {
+                @Hashed
+                var hashablePropery: String
+
+                #if os(macOS)
+                @NotHashed
+                #endif
+                var notHashedProperty: String
+            }
+            """
+        } expansion: {
+            """
+            struct Test {
+                var hashablePropery: String
+
+                var notHashedProperty: String
+            }
+
+            extension Test {
+                func hash(into hasher: inout Hasher) {
+                    hasher.combine(self.hashablePropery)
+                }
+            }
+
+            extension Test {
+                static func ==(lhs: Test, rhs: Test) -> Bool {
+                    return lhs.hashablePropery == rhs.hashablePropery
+                }
+            }
+            """
+        }
+        #else
+        throw XCTSkip("Macros are only supported when running tests for the host platform")
+        #endif
+    }
+
     func testNSObjectSubclass_implicitAutomaticCustomEqualToTypeFunctionName() throws {
         #if canImport(HashableMacroMacros)
         #if canImport(ObjectiveC)
