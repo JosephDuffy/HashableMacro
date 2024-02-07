@@ -54,7 +54,7 @@ struct MyStruct {
 
 ## `@Hashable` Only
 
-If the `@Hashable` macro is added but no properties are decorated with `@Hashed` or `@NotHashed` then all properties will be used.
+If the `@Hashable` macro is added but no properties are decorated with `@Hashed` or `@NotHashed` then all stored properties will be used.
 
 ```swift
 /// A struct that uses the ``stringProperty`` and ``intProperty`` for `Hashable` conformance.
@@ -77,11 +77,12 @@ One (fairly minor) advantage of this over adding `Hashable` conformance without 
 
 ## `NSObject` Support
 
-When a type implements `NSObjectProtocol` (e.g. it inherits from `NSObject`) it should override `hash` and `isEqual(_:)`, not `hash(into:)` and `==(lhs:rhs:)`. `@Hashable` detects when it is attached to a type conforming to `NSObjectProtocol` and will provide the `hash` property and `isEqual(_:)` function instead.
+When a type implements `NSObjectProtocol` (e.g. it inherits from `NSObject`) it should override `hash` and `isEqual(_:)`, not `hash(into:)` and `==`. `@Hashable` detects when it is attached to a type conforming to `NSObjectProtocol` and will provide the `hash` property and `isEqual(_:)` function instead.
 
-`@Hashable` will also provide an `isEqual(to:)` function that is takes a parameter that matches `Self`, which will have an appropriately named Objective-C function.
+`@Hashable` will also provide an `isEqual(to:)` function that takes a parameter that matches `Self`, which will also have an appropriately named Objective-C function.
 
 ```swift
+import HashableMacro
 
 @Hashable
 final class Person: NSObject {
@@ -116,14 +117,16 @@ extension Person {
 
 ## `final` `hash(into:)` Function
 
-When the `HashableMacro` macro is added to a class the generated `hash(into:)` function is marked `final`. This is because subclasses should not overload `==`. There are many reasons why this can be a bad idea, but specifically in Swift this does not work because:
+When the `@Hashable` macro is added to a class the generated `hash(into:)` function is marked `final`. This is because subclasses should not overload `==`. There are many reasons why this can be a bad idea, but specifically in Swift this does not work because:
 
 - `!=` is not part of the `Equatable` protocol, but rather an extension on `Equatable`, causing it to always use the `==` implementation from the class that adds `Equatable` conformance
   - It is possible to overload `!=` but this is still not a good idea because...
 - Anything that uses generics to compare the values, for example `XCTAssertEqual`, will use the `==` implementation from the class that adds `Equatable` conformance
-  - It is possible to work around this by using a separate function, in a similar way to `NSObjectProtocol`, which is then called from `==`, but this requires extra decisions to be made that shouldn't be made by this library, e.g. what to do when a subclass is compared to its superclass.
+  - It is possible to work around this by using a separate function, in a similar way to `NSObject`, which is then called from `==`
 
-If this is an issue for your usage you can pass `finalHashInto: false` to the macro, but it will not attempt to call `super` or use the properties annotated with `@Hashed` from the superclass.
+If this is an issue for your usage you can pass `finalHashInto: false` to the macro, but it will not attempt to call `super` or use properties from the superclass.
+
+This is not something the macro aims to solve.
 
 ## License
 
