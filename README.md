@@ -8,6 +8,8 @@
 The `@Hashable` macro is applied to the type that will conform to `Hashable` and the `Hashed` macro is applied to each of the properties that should contribute to the `Hashable` conformance.
 
 ```swift
+import HashableMacro
+
 /// A struct that uses the ``stringProperty`` and ``intProperty`` for `Hashable` conformance.
 @Hashable
 struct MyStruct {
@@ -80,19 +82,34 @@ When a type implements `NSObjectProtocol` (e.g. it inherits from `NSObject`) it 
 `@Hashable` will also provide an `isEqual(to:)` function that is takes a parameter that matches `Self`, which will have an appropriately named Objective-C function.
 
 ```swift
+
 @Hashable
 final class Person: NSObject {
-    // ... properties with @Hashed
+    @Hashed
+    var name: String = ""
 }
 
 extension Person {
-    func isEqual(_ object: Any?) -> Bool {
-        // ... implementation
+    override var hash: Int {
+        var hasher = Hasher()
+        hasher.combine(self.name)
+        return hasher.finalize()
     }
-    
+}
+
+extension Person {
+    override func isEqual(_ object: Any?) -> Bool {
+        guard let object = object as? Person else {
+            return false
+        }
+        guard type(of: self) == type(of: object) else {
+            return false
+        }
+        return self.isEqual(to: object)
+    }
     @objc(isEqualToPerson:)
-    func isEqual(to person: Person) -> Bool {
-        // ... implementation
+    func isEqual(to object: Person) -> Bool {
+        return self.name == object.name
     }
 }
 ```
