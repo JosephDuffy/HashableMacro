@@ -441,6 +441,42 @@ final class HashableMacroTests: XCTestCase {
         #endif
     }
 
+    func testHashedAttachedToMultiplePropertyDeclaration() throws {
+        #if canImport(HashableMacroMacros)
+        assertMacro(testMacros) {
+            """
+            @Hashable(_disableNSObjectSubclassSupport: true)
+            struct TestStruct {
+                @Hashed
+                var hashedProperty, secondHashedProperty: String
+            }
+            """
+        } expansion: {
+            """
+            struct TestStruct {
+                var hashedProperty, secondHashedProperty: String
+            }
+
+            extension TestStruct {
+                func hash(into hasher: inout Hasher) {
+                    hasher.combine(self.hashedProperty)
+                    hasher.combine(self.secondHashedProperty)
+                }
+            }
+
+            extension TestStruct {
+                static func ==(lhs: TestStruct, rhs: TestStruct) -> Bool {
+                    return lhs.hashedProperty == rhs.hashedProperty
+                        && lhs.secondHashedProperty == rhs.secondHashedProperty
+                }
+            }
+            """
+        }
+        #else
+        throw XCTSkip("Macros are only supported when running tests for the host platform")
+        #endif
+    }
+
     func testStructWithAllExcludedProperties() throws {
         #if canImport(HashableMacroMacros)
         assertMacro(testMacros) {
