@@ -1,50 +1,65 @@
 #if canImport(ObjectiveC)
 import ObjectiveC
+import HashableMacroFoundation
 
 /// A macro that adds `Hashable` conformance to the type it is attached to. The
-/// `==` function and `hash(into:)` functions will use the same properties. To
-/// include a property decorate it with the ``Hashed()`` macro.
+/// hash generation and equality checks will use the same properties. To include
+/// a property decorate it with the ``Hashed()`` macro. Alternatively the
+/// ``NotHashed()`` can be used with struct properties to opt-out a subset of
+/// properties, rather then opt-in.
 ///
-/// If this is attached to a type conforming to `NSObjectProtocol` this will
-/// instead override the `hash` property and `isEqual(_:)` function.
+/// When attached to a struct with only hashable properties the ``Hashed()`` and
+/// ``NotHashed()`` macros can be omitted and all properties will be used.
 ///
-/// - parameter finalHashInto: When `true`, and the macro is attached to a
-///   class that doesn't implement `NSObjectProtocol`, the `hash(into:)`
-///   function will be marked `final`. This helps avoid a pitfall when
-///   subclassing an `Equatable` class: the `==` function cannot be overridden
-///   in a subclass and `==` will always use the superclass.
-@attached(extension, conformances: Hashable, Equatable, NSObjectProtocol, names: named(hash), named(==), named(isEqual(_:)), named(hash))
-@available(swift 5.9.2)
-public macro Hashable(
-    finalHashInto: Bool = true,
-    nsObjectSubclassBehaviour: NSObjectSubclassBehaviour = .callSuperUnlessDirectSubclass
-) = #externalMacro(module: "HashableMacroMacros", type: "HashableMacro")
-
-public enum NSObjectSubclassBehaviour: Sendable {
-    /// Never call `super.isEqual(to:)` and do not incorporate `super.hash`.
-    case neverCallSuper
-
-    /// Call `super.isEqual(to:)` and incorporate `super.hash` only when the
-    /// type is not a direct subclass of `NSObject`.
-    case callSuperUnlessDirectSubclass
-
-    /// Always call `super.isEqual(to:)` and incorporate `super.hash`.
-    case alwaysCallSuper
-}
-#else
-/// A macro that adds `Hashable` conformance to the type it is attached to. The
-/// `==` function and `hash(into:)` functions will use the same properties. To
-/// include a property decorate it with the ``Hashed()`` macro.
+/// When attached to a Swift type this macro will provide the `hash(into:)`
+/// function and the `==(lhs:rhs:)` function. When attached to a type conforming
+/// to `NSObjectProtocol` this will produce a `hash` property, an `isEqual(_:)`
+/// function, and as `isEqualToType(_:)`-style function
 ///
-/// If this is attached to a type conforming to `NSObjectProtocol` this will
-/// instead override the `hash` property and `isEqual(_:)` function.
+/// For types conforming to `NSObjectProtocol` another object will only compare
+/// equal if it of the same class (e.g. subclasses and superclasses will never
+/// compare equal) and all annotated properties are equal.
 ///
 /// - parameter finalHashInto: When `true`, and the macro is attached to a
 ///   class, the `hash(into:)` function will be marked `final`. This helps avoid
 ///   a pitfall when subclassing an `Equatable` class: the `==` function cannot
 ///   be overridden in a subclass and `==` will always use the superclass.
+/// - parameter isEqualToTypeFunctionName: The name to use when using the
+///  `isEqual(to:)` function from Objective-C. Defaults to using the name of the
+///  class the macro is attached to. This only applies to types that conform to
+///  `NSObjectProtocol`.
+#if compiler(>=5.9.2)
+@attached(
+    extension, 
+    conformances: Hashable, Equatable, NSObjectProtocol, 
+    names: named(hash(into:)), named(==), named(hash), named(isEqual(_:)), named(isEqual(to:)), arbitrary
+)
+#else
+@attached(extension)
+#endif
+public macro Hashable(
+    finalHashInto: Bool = true,
+    isEqualToTypeFunctionName: IsEqualToTypeFunctionNameGeneration = .automatic
+) = #externalMacro(module: "HashableMacroMacros", type: "HashableMacro")
+#else
+/// A macro that adds `Hashable` conformance to the type it is attached to. The
+/// hash generation and equality checks will use the same properties. To include
+/// a property decorate it with the ``Hashed()`` macro. Alternatively the
+/// ``NotHashed()`` can be used with struct properties to opt-out a subset of
+/// properties, rather then opt-in.
+///
+/// When attached to a struct with only hashable properties the ``Hashed()`` and
+/// ``NotHashed()`` macros can be omitted and all properties will be used.
+///
+/// - parameter finalHashInto: When `true`, and the macro is attached to a
+///   class, the `hash(into:)` function will be marked `final`. This helps avoid
+///   a pitfall when subclassing an `Equatable` class: the `==` function cannot
+///   be overridden in a subclass and `==` will always use the superclass.
+#if compiler(>=5.9.2)
 @attached(extension, conformances: Hashable, Equatable, names: named(hash), named(==))
-@available(swift 5.9.2)
+#else
+@attached(extension)
+#endif
 public macro Hashable(
     finalHashInto: Bool = true
 ) = #externalMacro(module: "HashableMacroMacros", type: "HashableMacro")

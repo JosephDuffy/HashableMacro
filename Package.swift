@@ -31,13 +31,29 @@ let package = Package(
     .target(
         name: "HashableMacro",
         dependencies: [
+            .targetItem(
+                name: "HashableMacroFoundation",
+                condition: .when(
+                    platforms: [.macOS, .iOS, .tvOS, .watchOS, .macCatalyst]
+                )
+            ),
             "HashableMacroMacros",
         ],
+        swiftSettings: [.enableExperimentalFeature("StrictConcurrency")]
+    ),
+    .target(
+        name: "HashableMacroFoundation",
         swiftSettings: [.enableExperimentalFeature("StrictConcurrency")]
     ),
     .macro(
       name: "HashableMacroMacros",
       dependencies: [
+        .targetItem(
+            name: "HashableMacroFoundation",
+            condition: .when(
+                platforms: [.macOS, .iOS, .tvOS, .watchOS, .macCatalyst]
+            )
+        ),
         .product(name: "SwiftDiagnostics", package: "swift-syntax"),
         .product(name: "SwiftSyntax", package: "swift-syntax"),
         .product(name: "SwiftSyntaxMacros", package: "swift-syntax"),

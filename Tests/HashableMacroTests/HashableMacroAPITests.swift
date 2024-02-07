@@ -183,18 +183,15 @@ class NSObjectSubclass: NSObject {
     }
 }
 
-@Hashable
-class NSObjectSubclassSubclass: NSObjectSubclass {
+@Hashable(isEqualToTypeFunctionName: .custom("isEqualToObject:"))
+class NSObjectSubclassCustomEqualTo: NSObject {
     @Hashed
-    var nsObjectSubclassSubclassProperty: String
+    var nsObjectSubclassProperty: String
 
     init(
-        nsObjectSubclassProperty: String,
-        nsObjectSubclassSubclassProperty: String
+        nsObjectSubclassProperty: String
     ) {
-        self.nsObjectSubclassSubclassProperty = nsObjectSubclassSubclassProperty
-
-        super.init(nsObjectSubclassProperty: nsObjectSubclassProperty)
+        self.nsObjectSubclassProperty = nsObjectSubclassProperty
     }
 }
 #endif

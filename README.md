@@ -3,11 +3,13 @@
 > [!WARNING]
 > This package requires Swift 5.9.2, which ships with Xcode 15.1. It is possible to add this package in Xcode 15.0 and 15.0.1 but the `@Hashable` macro will not be available.
 
-`HashableMacro` is a Swift macro for adding `Hashable` conformance. It is particularly useful when synthesised conformance is not possible, such as with classes or a struct with 1 or more non-hashable properties.
+`@Hashable` is a Swift macro for adding `Hashable` conformance. It is particularly useful when synthesised conformance is not possible, such as with classes or a struct with 1 or more non-hashable properties.
 
 The `@Hashable` macro is applied to the type that will conform to `Hashable` and the `Hashed` macro is applied to each of the properties that should contribute to the `Hashable` conformance.
 
 ```swift
+import HashableMacro
+
 /// A struct that uses the ``stringProperty`` and ``intProperty`` for `Hashable` conformance.
 @Hashable
 struct MyStruct {
@@ -52,7 +54,7 @@ struct MyStruct {
 
 ## `@Hashable` Only
 
-If the `@Hashable` macro is added but no properties are decorated with `@Hashed` or `@NotHashed` then all properties will be used.
+If the `@Hashable` macro is added but no properties are decorated with `@Hashed` or `@NotHashed` then all stored properties will be used.
 
 ```swift
 /// A struct that uses the ``stringProperty`` and ``intProperty`` for `Hashable` conformance.
@@ -66,7 +68,7 @@ struct MyStruct {
 
     // Implicitly excluded from `Hashable` conformance
     var computedProperty: Bool {
-      intProperty > 0
+        intProperty > 0
     }
 }
 ```
@@ -75,20 +77,56 @@ One (fairly minor) advantage of this over adding `Hashable` conformance without 
 
 ## `NSObject` Support
 
-When a type inherits from `NSObject` it should override `hash` and `isEqual(_:)`, not `hash(into:)` and `==`. `HashableMacro` detects when it is attached to a type conforming to `NSObjectProtocol` and will provide the `hash` property and `isEqual(_:)` function instead.
+When a type implements `NSObjectProtocol` (e.g. it inherits from `NSObject`) it should override `hash` and `isEqual(_:)`, not `hash(into:)` and `==`. `@Hashable` detects when it is attached to a type conforming to `NSObjectProtocol` and will provide the `hash` property and `isEqual(_:)` function instead.
 
-By default `HashableMacro` will incorporate `super.isEqual(_:)` and `super.hash`, unless the type is a direct subclass of `NSObject`. This behaviour can be changed with the `nsObjectSubclassBehaviour` parameter.
+`@Hashable` will also provide an `isEqual(to:)` function that takes a parameter that matches `Self`, which will also have an appropriately named Objective-C function.
+
+```swift
+import HashableMacro
+
+@Hashable
+final class Person: NSObject {
+    @Hashed
+    var name: String = ""
+}
+
+extension Person {
+    override var hash: Int {
+        var hasher = Hasher()
+        hasher.combine(self.name)
+        return hasher.finalize()
+    }
+}
+
+extension Person {
+    override func isEqual(_ object: Any?) -> Bool {
+        guard let object = object as? Person else {
+            return false
+        }
+        guard type(of: self) == type(of: object) else {
+            return false
+        }
+        return self.isEqual(to: object)
+    }
+    @objc(isEqualToPerson:)
+    func isEqual(to object: Person) -> Bool {
+        return self.name == object.name
+    }
+}
+```
 
 ## `final` `hash(into:)` Function
 
-When the `HashableMacro` macro is added to a class the generated `hash(into:)` function is marked `final`. This is because subclasses should not overload `==`. There are many reasons why this can be a bad idea, but specifically in Swift this does not work because:
+When the `@Hashable` macro is added to a class the generated `hash(into:)` function is marked `final`. This is because subclasses should not overload `==`. There are many reasons why this can be a bad idea, but specifically in Swift this does not work because:
 
 - `!=` is not part of the `Equatable` protocol, but rather an extension on `Equatable`, causing it to always use the `==` implementation from the class that adds `Equatable` conformance
   - It is possible to overload `!=` but this is still not a good idea because...
 - Anything that uses generics to compare the values, for example `XCTAssertEqual`, will use the `==` implementation from the class that adds `Equatable` conformance
-  - It is possible to work around this by using a separate function, in a similar way to `NSObjectProtocol`, which is then called from `==`, but this requires extra decisions to be made that shouldn't be made by this library, e.g. what to do when a subclass is compared to its superclass.
+  - It is possible to work around this by using a separate function, in a similar way to `NSObject`, which is then called from `==`
 
-If this is an issue for your usage you can pass `finalHashInto: false` to the macro, but it will not attempt to call `super` or use the properties annotated with `@Hashed` from the superclass.
+If this is an issue for your usage you can pass `finalHashInto: false` to the macro, but it will not attempt to call `super` or use properties from the superclass.
+
+This is not something the macro aims to solve.
 
 ## License
 
