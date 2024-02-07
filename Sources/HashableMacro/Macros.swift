@@ -28,12 +28,15 @@ import HashableMacroFoundation
 ///  `isEqual(to:)` function from Objective-C. Defaults to using the name of the
 ///  class the macro is attached to. This only applies to types that conform to
 ///  `NSObjectProtocol`.
+#if compiler(>=5.9.2)
 @attached(
     extension, 
     conformances: Hashable, Equatable, NSObjectProtocol, 
     names: named(hash(into:)), named(==), named(hash), named(isEqual(_:)), named(isEqual(to:)), arbitrary
 )
-@available(swift 5.9.2)
+#else
+@attached(extension)
+#endif
 public macro Hashable(
     finalHashInto: Bool = true,
     isEqualToTypeFunctionName: IsEqualToTypeFunctionNameGeneration = .automatic
@@ -52,8 +55,11 @@ public macro Hashable(
 ///   class, the `hash(into:)` function will be marked `final`. This helps avoid
 ///   a pitfall when subclassing an `Equatable` class: the `==` function cannot
 ///   be overridden in a subclass and `==` will always use the superclass.
+#if compiler(>=5.9.2)
 @attached(extension, conformances: Hashable, Equatable, names: named(hash), named(==))
-@available(swift 5.9.2)
+#else
+@attached(extension)
+#endif
 public macro Hashable(
     finalHashInto: Bool = true
 ) = #externalMacro(module: "HashableMacroMacros", type: "HashableMacro")
