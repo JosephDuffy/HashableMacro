@@ -7,6 +7,36 @@ import Foundation
 
 #if compiler(>=5.9.2)
 @Hashable
+public struct PublicStruct {
+    @Hashed
+    var hashableProperty: String
+}
+
+@Hashable
+package struct PackageStruct {
+    @Hashed
+    var hashableProperty: String
+}
+
+@Hashable
+internal struct ExplicitInternalStruct {
+    @Hashed
+    var hashableProperty: String
+}
+
+@Hashable
+fileprivate struct FileprivateStruct {
+    @Hashed
+    var hashableProperty: String
+}
+
+@Hashable
+private struct PrivateStruct {
+    @Hashed
+    var hashableProperty: String
+}
+
+@Hashable
 struct HashableStructWithExplicitlyIncludedProperties {
     @Hashed
     let firstProperty: Int
@@ -113,6 +143,24 @@ public class HashableClassWithPrivateProperty: Hashable {
     }
 }
 
+@Hashable(finalHashInto: false)
+public class HashableClassWithNonFinalHashInto: Hashable {
+    @Hashed
+    let firstProperty: Int
+
+    @Hashed
+    let secondProperty: Int
+
+    @Hashed
+    private let privateProperty: Int
+
+    init(firstProperty: Int, secondProperty: Int, privateProperty: Int) {
+        self.firstProperty = firstProperty
+        self.secondProperty = secondProperty
+        self.privateProperty = privateProperty
+    }
+}
+
 /// A type that explicitly conforms to `Hashable`; the macro should not try to
 /// add conformance (but it should still add the implementation required).
 @Hashable
@@ -184,13 +232,11 @@ class NSObjectSubclass: NSObject {
 }
 
 @Hashable(isEqualToTypeFunctionName: .custom("isEqualToObject:"))
-class NSObjectSubclassCustomEqualTo: NSObject {
+public class NSObjectSubclassCustomEqualTo: NSObject {
     @Hashed
     var nsObjectSubclassProperty: String
 
-    init(
-        nsObjectSubclassProperty: String
-    ) {
+    init(nsObjectSubclassProperty: String) {
         self.nsObjectSubclassProperty = nsObjectSubclassProperty
     }
 }

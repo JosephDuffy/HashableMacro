@@ -34,14 +34,14 @@ extension HashableMacro {
 
         let baseModifiers = declaration.modifiers.filter({ modifier in
             switch (modifier.name.tokenKind) {
-            case .keyword(.public):
+            case .keyword(.public), .keyword(.internal), .keyword(.fileprivate), .keyword(.package):
+                // Only public is truly needed, but we can be explicit with the others.
                 return true
-            case .keyword(.internal):
+            case .keyword(.open) where !finalHashInto:
                 return true
-            case .keyword(.fileprivate):
-                return true
-            case .keyword(.private):
-                // The added functions should never be private
+            case .keyword(.private), .keyword(.open):
+                // The added functions should never be private because they're in an extension. open
+                // is also ignored when `hash(into:)` is final.
                 return false
             default:
                 return false
@@ -114,22 +114,6 @@ extension HashableMacro {
                 severity: .error
             )
         }
-
-        let baseModifiers = declaration.modifiers.filter({ modifier in
-            switch (modifier.name.tokenKind) {
-            case .keyword(.public):
-                return true
-            case .keyword(.internal):
-                return true
-            case .keyword(.fileprivate):
-                return true
-            case .keyword(.private):
-                // The added functions should never be private
-                return false
-            default:
-                return false
-            }
-        })
 
         let equalsFunctionSignature = FunctionSignatureSyntax(
             parameterClause: FunctionParameterClauseSyntax(
@@ -205,7 +189,19 @@ extension HashableMacro {
             })
         )
 
-        var equalsFunctionModifiers = baseModifiers
+        var equalsFunctionModifiers = DeclModifierListSyntax(declaration.modifiers.compactMap { modifier in
+            switch (modifier.name.tokenKind) {
+            case .keyword(.public), .keyword(.internal), .keyword(.fileprivate), .keyword(.package):
+                // Only public is truly needed, but we can be explicit with the others.
+                return modifier
+            case .keyword(.open):
+                // `==` is implicitly final; it cannot be open but it does need to be public.
+                return DeclModifierSyntax(name: .keyword(.public))
+            default:
+                // Anything else, e.g. private and final, should be discarded.
+                return nil
+            }
+        })
         equalsFunctionModifiers.append(
             DeclModifierSyntax(name: .keyword(.static))
         )

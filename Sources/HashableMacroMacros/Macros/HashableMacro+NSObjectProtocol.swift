@@ -12,23 +12,21 @@ extension HashableMacro {
         in context: some MacroExpansionContext,
         propertiesToHash: [TokenSyntax]
     ) -> DeclSyntax {
-        let baseModifiers = declaration.modifiers.filter({ modifier in
+        var hashPropertyModifiers = DeclModifierListSyntax(declaration.modifiers.compactMap { modifier in
             switch (modifier.name.tokenKind) {
-            case .keyword(.public):
-                return true
-            case .keyword(.internal):
-                return true
-            case .keyword(.fileprivate):
-                return true
-            case .keyword(.private):
-                // The added functions should never be private
-                return false
+            case .keyword(.public), .keyword(.internal), .keyword(.fileprivate), .keyword(.package):
+                // Only public is truly needed, but we can be explicit with the others.
+                return modifier
+            case .keyword(.open):
+                // This property is final and cannot be open.
+                var modifier = modifier
+                modifier.name.tokenKind = .keyword(.public)
+                return modifier
             default:
-                return false
+                // Anything else, e.g. private and final, should be discarded.
+                return nil
             }
         })
-
-        var hashPropertyModifiers = baseModifiers
         hashPropertyModifiers.append(
             DeclModifierSyntax(name: .keyword(.override))
         )
@@ -109,18 +107,6 @@ extension HashableMacro {
         propertiesToHash: [TokenSyntax],
         isEqualToTypeFunctionName: IsEqualToTypeFunctionNameGeneration
     ) -> [DeclSyntax] {
-        let baseModifiers = declaration.modifiers.filter({ modifier in
-            switch (modifier.name.tokenKind) {
-            case .keyword(.public), .keyword(.internal), .keyword(.fileprivate), .keyword(.open):
-                return true
-            case .keyword(.private):
-                // The added functions should never be private
-                return false
-            default:
-                return false
-            }
-        })
-
         var comparisons: InfixOperatorExprSyntax?
 
         for propertyToken in propertiesToHash {
@@ -269,7 +255,16 @@ extension HashableMacro {
             })
         )
 
-        var equalsFunctionModifiers = baseModifiers
+        var equalsFunctionModifiers = declaration.modifiers.filter({ modifier in
+            switch (modifier.name.tokenKind) {
+            case .keyword(.open), .keyword(.public), .keyword(.internal), .keyword(.fileprivate), .keyword(.package):
+                // Only open and public are truly needed, but we can be explicit with the others.
+                return true
+            default:
+                // Anything else, e.g. private and final, should be discarded.
+                return false
+            }
+        })
         equalsFunctionModifiers.append(
             DeclModifierSyntax(name: .keyword(.override))
         )
@@ -302,6 +297,25 @@ extension HashableMacro {
             objectiveCName = .identifier(customName)
         }
 
+        var isEqualTypedFunctionModifiers = DeclModifierListSyntax(declaration.modifiers.compactMap { modifier in
+            switch (modifier.name.tokenKind) {
+            case .keyword(.public), .keyword(.internal), .keyword(.fileprivate), .keyword(.package):
+                // Only public is truly needed, but we can be explicit with the others.
+                return modifier
+            case .keyword(.open):
+                // This function is final and cannot be open.
+                var modifier = modifier
+                modifier.name.tokenKind = .keyword(.public)
+                return modifier
+            default:
+                // Anything else, e.g. private and final, should be discarded.
+                return nil
+            }
+        })
+        isEqualTypedFunctionModifiers.append(
+            DeclModifierSyntax(name: .keyword(.final))
+        )
+
         let isEqualTypedFunction = FunctionDeclSyntax(
             attributes: AttributeListSyntax {
                 .attribute(
@@ -316,7 +330,7 @@ extension HashableMacro {
                     )
                 )
             },
-            modifiers: baseModifiers,
+            modifiers: isEqualTypedFunctionModifiers,
             name: .identifier("isEqual"),
             signature: FunctionSignatureSyntax(
                 parameterClause: FunctionParameterClauseSyntax(
