@@ -294,37 +294,9 @@ public struct HashableMacro: ExtensionMacro {
             )
             protocolExtensions.append(hashPropertyExtension)
             protocolExtensions.append(isEqualImplementationExtension)
-        } else {
-            let hashableImplementationExtension = ExtensionDeclSyntax(
-                extendedType: type,
-                memberBlock: MemberBlockSyntax(
-                    members: MemberBlockItemListSyntax(itemsBuilder: {
-                        expansionForHashable(
-                            of: node,
-                            providingMembersOf: declaration,
-                            in: context,
-                            propertiesToHash: propertiesToHash
-                        )
-                    })
-                )
-            )
-            let equatableImplementationExtension = ExtensionDeclSyntax(
-                extendedType: type,
-                memberBlock: MemberBlockSyntax(
-                    members: try MemberBlockItemListSyntax(itemsBuilder: {
-                        try expansionForEquals(
-                            of: node,
-                            providingMembersOf: declaration,
-                            in: context,
-                            propertiesToHash: propertiesToHash
-                        )
-                    })
-                )
-            )
-            protocolExtensions.append(hashableImplementationExtension)
-            protocolExtensions.append(equatableImplementationExtension)
+            return protocolExtensions
         }
-        #else
+        #endif
         let hashableImplementationExtension = ExtensionDeclSyntax(
             extendedType: type,
             memberBlock: MemberBlockSyntax(
@@ -353,7 +325,6 @@ public struct HashableMacro: ExtensionMacro {
         )
         protocolExtensions.append(hashableImplementationExtension)
         protocolExtensions.append(equatableImplementationExtension)
-        #endif
 
         return protocolExtensions
     }
