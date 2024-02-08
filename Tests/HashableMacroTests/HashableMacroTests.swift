@@ -4,13 +4,18 @@ import SwiftSyntaxMacrosTestSupport
 import XCTest
 
 #if canImport(HashableMacroMacros)
-import HashableMacroMacros
+@testable import HashableMacroMacros
 
-private let testMacros: [String: Macro.Type] = [
-    "Hashable": HashableMacro.self,
-    "Hashed": HashedMacro.self,
-    "NotHashed": NotHashedMacro.self,
-]
+private let testMacros: [String: Macro.Type] = Dictionary(
+    uniqueKeysWithValues: HashableMacroPlugin()
+        .providingMacros
+        .map { macroType in
+            (
+                String(String(describing: macroType).dropLast("Macro".count)),
+                macroType
+            )
+        }
+    )
 #endif
 
 final class HashableMacroTests: XCTestCase {

@@ -1,3 +1,2 @@
 ignore:
-  - "Sources/HashableMacroMacros/CustomHashablePlugin.swift"
   - "Tests/HashableMacroTests/HashableMacroAPITests.swift"
