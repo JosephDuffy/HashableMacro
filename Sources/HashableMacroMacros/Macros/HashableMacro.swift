@@ -172,7 +172,34 @@ public struct HashableMacro: ExtensionMacro {
             }
         }
 
-        let propertiesToHash = !explicitlyHashedProperties.isEmpty ? explicitlyHashedProperties : undecoratedProperties
+        let propertiesToHash: [TokenSyntax]
+
+        if !explicitlyHashedProperties.isEmpty {
+            propertiesToHash = explicitlyHashedProperties
+        } else if declaration.is(StructDeclSyntax.self) {
+            propertiesToHash = undecoratedProperties
+        } else if declaration.is(ClassDeclSyntax.self) {
+            // We can't know if properties are added in a superclass, plus Swift
+            // itself does not support this.
+            throw HashableMacroDiagnosticMessage(
+                id: "synthesised-properties-not-supported-class",
+                message: "No properties marked with '@Hashed' were found. Synthesising Hashable conformance is not supported for classes.",
+                severity: .error
+            )
+        } else if declaration.is(ActorDeclSyntax.self) {
+            // Swift itself does not support this, probably for a good reason.
+            throw HashableMacroDiagnosticMessage(
+                id: "synthesised-properties-not-supported-actor",
+                message: "No properties marked with '@Hashed' were found. Synthesising Hashable conformance is not supported for actors.",
+                severity: .error
+            )
+        } else {
+            throw HashableMacroDiagnosticMessage(
+                id: "synthesised-properties-not-supported-unknown",
+                message: "No properties marked with '@Hashed' were found. Synthesising Hashable conformance is not supported for this type.",
+                severity: .error
+            )
+        }
 
         if propertiesToHash.isEmpty {
             switch allowEmptyImplementation {

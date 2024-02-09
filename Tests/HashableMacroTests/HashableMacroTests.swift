@@ -1056,6 +1056,54 @@ final class HashableMacroTests: XCTestCase {
         #endif
     }
 
+    func testClassWithoutHashedProperties() throws {
+        #if canImport(HashableMacroMacros)
+        assertMacro(testMacros) {
+            """
+            @Hashable
+            class TestClass {
+                var notHashedProperty: String
+            }
+            """
+        } diagnostics: {
+            """
+            @Hashable
+            ┬────────
+            ╰─ 🛑 No properties marked with '@Hashed' were found. Synthesising Hashable conformance is not supported for classes.
+            class TestClass {
+                var notHashedProperty: String
+            }
+            """
+        }
+        #else
+        throw XCTSkip("Macros are only supported when running tests for the host platform")
+        #endif
+    }
+
+    func testActorWithoutHashedProperties() throws {
+        #if canImport(HashableMacroMacros)
+        assertMacro(testMacros) {
+            """
+            @Hashable
+            actor TestActor {
+                var notHashedProperty: String
+            }
+            """
+        } diagnostics: {
+            """
+            @Hashable
+            ┬────────
+            ╰─ 🛑 No properties marked with '@Hashed' were found. Synthesising Hashable conformance is not supported for actors.
+            actor TestActor {
+                var notHashedProperty: String
+            }
+            """
+        }
+        #else
+        throw XCTSkip("Macros are only supported when running tests for the host platform")
+        #endif
+    }
+
     // MARK: - Edge cases
 
     func testPropertyAfterIfConfig() throws {
@@ -1427,7 +1475,6 @@ final class HashableMacroTests: XCTestCase {
     func testNSObjectSubclassWithoutHashedProperties() throws {
         #if canImport(HashableMacroMacros)
         #if canImport(ObjectiveC)
-        #warning("TODO: Synthesising properties should not be supported for classes")
         assertMacro(testMacros) {
             """
             @Hashable
@@ -1440,48 +1487,10 @@ final class HashableMacroTests: XCTestCase {
             """
             @Hashable
             ┬────────
-            ╰─ ⚠️ No hashable properties were found. All instances will be equal to each other.
-               ✏️ Add 'allowEmptyImplementation: true' to silence this warning.
+            ╰─ 🛑 No properties marked with '@Hashed' were found. Synthesising Hashable conformance is not supported for classes.
             class TestClass: NSObject {
                 @NotHashed
                 var notHashedProperty: String
-            }
-            """
-        } fixes: {
-            """
-            @Hashable(allowEmptyImplementation: true)
-            class TestClass: NSObject {
-                @NotHashed
-                var notHashedProperty: String
-            }
-            """
-        } expansion: {
-            """
-            class TestClass: NSObject {
-                var notHashedProperty: String
-            }
-
-            extension TestClass {
-                override var hash: Int {
-                    let hasher = Hasher()
-                    return hasher.finalize()
-                }
-            }
-
-            extension TestClass {
-                override func isEqual(_ object: Any?) -> Bool {
-                    guard let object = object as? TestClass else {
-                        return false
-                    }
-                    guard type(of: self) == type(of: object) else {
-                        return false
-                    }
-                    return self.isEqual(to: object)
-                }
-                @objc(isEqualToTestClass:)
-                final func isEqual(to object: TestClass) -> Bool {
-                    return true
-                }
             }
             """
         }

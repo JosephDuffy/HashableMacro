@@ -225,11 +225,11 @@ struct CustomEqualityStruct {
     var hashedProperty: String = ""
 }
 
+@Hashable(allowEmptyImplementation: true)
+struct StructWithoutExtraProperties {}
+
 #if canImport(ObjectiveC)
 import ObjectiveC
-
-@Hashable(allowEmptyImplementation: true)
-class NSObjectSubclassWithoutExtraProperties: NSObject {}
 
 @Hashable
 class NSObjectSubclass: NSObject {
