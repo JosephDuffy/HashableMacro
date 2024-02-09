@@ -1013,6 +1013,30 @@ final class HashableMacroTests: XCTestCase {
         #endif
     }
 
+    func testEnum() throws {
+        #if canImport(HashableMacroMacros)
+        assertMacro(testMacros) {
+            """
+            @Hashable(_disableNSObjectSubclassSupport: true)
+            enum TestEnum {
+                case testCase
+            }
+            """
+        } diagnostics: {
+            """
+            @Hashable(_disableNSObjectSubclassSupport: true)
+            ┬───────────────────────────────────────────────
+            ╰─ 🛑 'Hashable' is not currently supported on enums.
+            enum TestEnum {
+                case testCase
+            }
+            """
+        }
+        #else
+        throw XCTSkip("Macros are only supported when running tests for the host platform")
+        #endif
+    }
+
     // MARK: - Edge cases
 
     func testPropertyAfterIfConfig() throws {

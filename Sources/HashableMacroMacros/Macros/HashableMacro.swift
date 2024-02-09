@@ -15,6 +15,14 @@ public struct HashableMacro: ExtensionMacro {
         conformingTo protocols: [TypeSyntax],
         in context: some MacroExpansionContext
     ) throws -> [ExtensionDeclSyntax] {
+        guard !declaration.is(EnumDeclSyntax.self) else {
+            throw HashableMacroDiagnosticMessage(
+                id: "enum-not-supported",
+                message: "'Hashable' is not currently supported on enums.",
+                severity: .error
+            )
+        }
+
         // The macro declares that it can add `NSObjectProtocol`, but this is
         // used to check whether the compiler asks for it to be added. If the
         // macro is asked to add `NSObjectProtocol` conformance then we know
