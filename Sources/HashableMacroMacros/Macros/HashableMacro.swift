@@ -61,6 +61,37 @@ public struct HashableMacro: ExtensionMacro {
             }
         }
 
+        var allowEmptyImplementation: Bool?
+
+        if let arguments = node.arguments?.as(LabeledExprListSyntax.self) {
+            for argument in arguments {
+                switch argument.label?.trimmed.text {
+                case "allowEmptyImplementation":
+                    guard let expression = argument.expression.as(BooleanLiteralExprSyntax.self) else { continue }
+                    switch expression.literal.tokenKind {
+                    case .keyword(.true):
+                        allowEmptyImplementation = true
+                    case .keyword(.false):
+                        allowEmptyImplementation = false
+                    default:
+                        break
+                    }
+                #if canImport(ObjectiveC) && DEBUG
+                case "_disableNSObjectSubclassSupport":
+                    guard let expression = argument.expression.as(BooleanLiteralExprSyntax.self) else { continue }
+                    switch expression.literal.tokenKind {
+                    case .keyword(.true):
+                        isNSObjectSubclass = false
+                    default:
+                        break
+                    }
+                #endif
+                default:
+                    break
+                }
+            }
+        }
+
         let properties = declaration.memberBlock.members.compactMap({ $0.decl.as(VariableDeclSyntax.self) })
         var explicitlyHashedProperties: [TokenSyntax] = []
         var undecoratedProperties: [TokenSyntax] = []
@@ -142,6 +173,50 @@ public struct HashableMacro: ExtensionMacro {
         }
 
         let propertiesToHash = !explicitlyHashedProperties.isEmpty ? explicitlyHashedProperties : undecoratedProperties
+
+        if propertiesToHash.isEmpty {
+            switch allowEmptyImplementation {
+            case .some(true):
+                break
+            case .some(false):
+                throw HashableMacroDiagnosticMessage(
+                    id: "no-properties-to-hash-disallowed",
+                    message: "No hashable properties were found and 'allowEmptyImplementation' is 'false'.",
+                    severity: .error
+                )
+            case nil:
+                var arguments = node.arguments?.as(LabeledExprListSyntax.self) ?? LabeledExprListSyntax()
+                arguments.addOrUpdateHashableArgument(
+                    label: "allowEmptyImplementation",
+                    expression: BooleanLiteralExprSyntax(booleanLiteral: true)
+                )
+                var fixedNode = node
+                fixedNode.arguments = .argumentList(arguments)
+                fixedNode.leftParen = .leftParenToken()
+                fixedNode.rightParen = .rightParenToken()
+                let diagnostic = Diagnostic(
+                    node: node,
+                    message: HashableMacroDiagnosticMessage(
+                        id: "no-properties-to-hash",
+                        message: "No hashable properties were found. All instances will be equal to each other.",
+                        severity: .warning
+                    ),
+                    fixIt: FixIt(
+                        message: HashableMacroFixItMessage(
+                            id: "redundant-not-hashed",
+                            message: "Add 'allowEmptyImplementation: true' to silence this warning."
+                        ),
+                        changes: [
+                            FixIt.Change.replace(
+                                oldNode: Syntax(node),
+                                newNode: Syntax(fixedNode)
+                            )
+                        ]
+                    )
+                )
+                context.diagnose(diagnostic)
+            }
+        }
 
         #if canImport(ObjectiveC)
         #if DEBUG

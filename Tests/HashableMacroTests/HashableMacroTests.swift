@@ -662,6 +662,25 @@ final class HashableMacroTests: XCTestCase {
                 var hashedProperty: String
             }
             """
+        } diagnostics: {
+            """
+            @Hashable(_disableNSObjectSubclassSupport: true)
+            ┬───────────────────────────────────────────────
+            ╰─ ⚠️ No hashable properties were found. All instances will be equal to each other.
+               ✏️ Add 'allowEmptyImplementation: true' to silence this warning.
+            struct TestStruct {
+                @NotHashed
+                var hashedProperty: String
+            }
+            """
+        } fixes: {
+            """
+            @Hashable(allowEmptyImplementation: true, _disableNSObjectSubclassSupport: true)
+            struct TestStruct {
+                @NotHashed
+                var hashedProperty: String
+            }
+            """
         } expansion: {
             """
             struct TestStruct {
@@ -1411,7 +1430,26 @@ final class HashableMacroTests: XCTestCase {
         #warning("TODO: Synthesising properties should not be supported for classes")
         assertMacro(testMacros) {
             """
-            @Hashable(_disableNSObjectSubclassSupport: false)
+            @Hashable
+            class TestClass: NSObject {
+                @NotHashed
+                var notHashedProperty: String
+            }
+            """
+        } diagnostics: {
+            """
+            @Hashable
+            ┬────────
+            ╰─ ⚠️ No hashable properties were found. All instances will be equal to each other.
+               ✏️ Add 'allowEmptyImplementation: true' to silence this warning.
+            class TestClass: NSObject {
+                @NotHashed
+                var notHashedProperty: String
+            }
+            """
+        } fixes: {
+            """
+            @Hashable(allowEmptyImplementation: true)
             class TestClass: NSObject {
                 @NotHashed
                 var notHashedProperty: String

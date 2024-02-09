@@ -25,9 +25,13 @@ import HashableMacroFoundation
 ///   a pitfall when subclassing an `Equatable` class: the `==` function cannot
 ///   be overridden in a subclass and `==` will always use the superclass.
 /// - parameter isEqualToTypeFunctionName: The name to use when using the
-///  `isEqual(to:)` function from Objective-C. Defaults to using the name of the
-///  class the macro is attached to. This only applies to types that conform to
-///  `NSObjectProtocol`.
+///   `isEqual(to:)` function from Objective-C. Defaults to using the name of
+///   the class the macro is attached to. This only applies to types that
+///   conform to `NSObjectProtocol`.
+/// - parameter allowEmptyImplementation: When `nil` (default) and there are no
+///   properties that contribute to the `Hashable` conformance the macro will
+///   produce a warning. When `true` this warning is suppressed. When `false`
+///   the warning will be elevated to an error.
 #if compiler(>=5.9.2)
 @attached(
     extension, 
@@ -39,7 +43,8 @@ import HashableMacroFoundation
 #endif
 public macro Hashable(
     finalHashInto: Bool = true,
-    isEqualToTypeFunctionName: IsEqualToTypeFunctionNameGeneration = .automatic
+    isEqualToTypeFunctionName: IsEqualToTypeFunctionNameGeneration = .automatic,
+    allowEmptyImplementation: Bool? = nil
 ) = #externalMacro(module: "HashableMacroMacros", type: "HashableMacro")
 #else
 /// A macro that adds `Hashable` conformance to the type it is attached to. The
@@ -55,13 +60,18 @@ public macro Hashable(
 ///   class, the `hash(into:)` function will be marked `final`. This helps avoid
 ///   a pitfall when subclassing an `Equatable` class: the `==` function cannot
 ///   be overridden in a subclass and `==` will always use the superclass.
+/// - parameter allowEmptyImplementation: When `nil` (default) and there are no
+///   properties that contribute to the `Hashable` conformance the macro will
+///   produce a warning. When `true` this warning is suppressed. When `false`
+///   the warning will be elevated to an error.   
 #if compiler(>=5.9.2)
 @attached(extension, conformances: Hashable, Equatable, names: named(hash), named(==))
 #else
 @attached(extension)
 #endif
 public macro Hashable(
-    finalHashInto: Bool = true
+    finalHashInto: Bool = true,
+    allowEmptyImplementation: Bool? = nil
 ) = #externalMacro(module: "HashableMacroMacros", type: "HashableMacro")
 #endif
 
