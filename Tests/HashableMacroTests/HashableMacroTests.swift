@@ -1189,7 +1189,7 @@ final class HashableMacroTests: XCTestCase {
         #endif
     }
 
-    func testUnlablledParameter() throws {
+    func testUnlabelledParameter() throws {
         #if canImport(HashableMacroMacros)
         assertMacro(testMacros) {
             """
