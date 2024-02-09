@@ -243,7 +243,7 @@ public struct HashableMacro: ExtensionMacro {
         }
         #endif
         if isNSObjectSubclass {
-            guard let classDeclaration = declaration as? ClassDeclSyntax else {
+            guard let classDeclaration = declaration.as(ClassDeclSyntax.self) else {
                 throw HashableMacroDiagnosticMessage(
                     id: "nsobject-subclass-not-class",
                     message: "This type conforms to 'NSObjectProtocol' but is not a class",
