@@ -704,6 +704,32 @@ final class HashableMacroTests: XCTestCase {
         #endif
     }
 
+    func testStructWithAllExcludedPropertiesDisallowedEmptyImplementation() throws {
+        #if canImport(HashableMacroMacros)
+        assertMacro(testMacros) {
+            """
+            @Hashable(allowEmptyImplementation: false, _disableNSObjectSubclassSupport: true)
+            struct TestStruct {
+                @NotHashed
+                var hashedProperty: String
+            }
+            """
+        } diagnostics: {
+            """
+            @Hashable(allowEmptyImplementation: false, _disableNSObjectSubclassSupport: true)
+            ┬────────────────────────────────────────────────────────────────────────────────
+            ╰─ 🛑 No hashable properties were found and 'allowEmptyImplementation' is 'false'.
+            struct TestStruct {
+                @NotHashed
+                var hashedProperty: String
+            }
+            """
+        }
+        #else
+        throw XCTSkip("Macros are only supported when running tests for the host platform")
+        #endif
+    }
+
     func testPublicFinalType() throws {
         #if canImport(HashableMacroMacros)
         assertMacro(testMacros) {
