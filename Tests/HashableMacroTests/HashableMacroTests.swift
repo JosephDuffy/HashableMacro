@@ -1253,6 +1253,110 @@ final class HashableMacroTests: XCTestCase {
         #endif
     }
 
+    func testIsEqualToTypeFunctionNameInvalidType() throws {
+        #if canImport(HashableMacroMacros)
+        assertMacro(testMacros) {
+            """
+            @Hashable(isEqualToTypeFunctionName: 123, _disableNSObjectSubclassSupport: false)
+            class Test: NSObject {
+                @Hashed
+                var hashablePropery: String
+            }
+            """
+        } diagnostics: {
+            """
+            @Hashable(isEqualToTypeFunctionName: 123, _disableNSObjectSubclassSupport: false)
+            ┬────────────────────────────────────────────────────────────────────────────────
+            ╰─ 🛑 'isEqualToTypeFunctionName' parameter was not of the expected type
+            class Test: NSObject {
+                @Hashed
+                var hashablePropery: String
+            }
+            """
+        }
+        #else
+        throw XCTSkip("Macros are only supported when running tests for the host platform")
+        #endif
+    }
+
+    func testIsEqualToTypeFunctionNameInvalidName() throws {
+        #if canImport(HashableMacroMacros)
+        assertMacro(testMacros) {
+            """
+            @Hashable(isEqualToTypeFunctionName: .invalidName, _disableNSObjectSubclassSupport: false)
+            class Test: NSObject {
+                @Hashed
+                var hashablePropery: String
+            }
+            """
+        } diagnostics: {
+            """
+            @Hashable(isEqualToTypeFunctionName: .invalidName, _disableNSObjectSubclassSupport: false)
+            ┬─────────────────────────────────────────────────────────────────────────────────────────
+            ╰─ 🛑 'invalidName' is not a known value for `IsEqualToTypeFunctionNameGeneration`.
+            class Test: NSObject {
+                @Hashed
+                var hashablePropery: String
+            }
+            """
+        }
+        #else
+        throw XCTSkip("Macros are only supported when running tests for the host platform")
+        #endif
+    }
+
+    func testIsEqualToTypeFunctionNameInvalidCustomNameType() throws {
+        #if canImport(HashableMacroMacros)
+        assertMacro(testMacros) {
+            """
+            @Hashable(isEqualToTypeFunctionName: .custom(123), _disableNSObjectSubclassSupport: false)
+            class Test: NSObject {
+                @Hashed
+                var hashablePropery: String
+            }
+            """
+        } diagnostics: {
+            """
+            @Hashable(isEqualToTypeFunctionName: .custom(123), _disableNSObjectSubclassSupport: false)
+            ┬─────────────────────────────────────────────────────────────────────────────────────────
+            ╰─ 🛑 Only option for 'custom' must be a string.
+            class Test: NSObject {
+                @Hashed
+                var hashablePropery: String
+            }
+            """
+        }
+        #else
+        throw XCTSkip("Macros are only supported when running tests for the host platform")
+        #endif
+    }
+
+    func testIsEqualToTypeFunctionNameInvalidCustomNameParameterCount() throws {
+        #if canImport(HashableMacroMacros)
+        assertMacro(testMacros) {
+            """
+            @Hashable(isEqualToTypeFunctionName: .custom("name1", "name2"), _disableNSObjectSubclassSupport: false)
+            class Test: NSObject {
+                @Hashed
+                var hashablePropery: String
+            }
+            """
+        } diagnostics: {
+            """
+            @Hashable(isEqualToTypeFunctionName: .custom("name1", "name2"), _disableNSObjectSubclassSupport: false)
+            ┬──────────────────────────────────────────────────────────────────────────────────────────────────────
+            ╰─ 🛑 Only 1 argument is supported for 'custom'.
+            class Test: NSObject {
+                @Hashed
+                var hashablePropery: String
+            }
+            """
+        }
+        #else
+        throw XCTSkip("Macros are only supported when running tests for the host platform")
+        #endif
+    }
+
     // MARK: - Objective-C
 
     func testOpenNSObjectSubclass() throws {

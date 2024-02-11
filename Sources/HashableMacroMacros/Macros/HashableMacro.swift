@@ -291,7 +291,7 @@ public struct HashableMacro: ExtensionMacro {
                             default:
                                 throw HashableMacroDiagnosticMessage(
                                     id: "unknown-isEqualToTypeFunctionName-name",
-                                    message: "'\(expression.declName.baseName)' is not a known value for `IsEqualToTypeFunctionNameGeneration`",
+                                    message: "'\(expression.declName.baseName)' is not a known value for `IsEqualToTypeFunctionNameGeneration`.",
                                     severity: .error
                                 )
                             }
@@ -308,7 +308,7 @@ public struct HashableMacro: ExtensionMacro {
                                 guard functionExpression.arguments.count == 1 else {
                                     throw HashableMacroDiagnosticMessage(
                                         id: "invalid-isEqualToTypeFunctionName-argument",
-                                        message: "Only 1 argument is supported for 'custom'",
+                                        message: "Only 1 argument is supported for 'custom'.",
                                         severity: .error
                                     )
                                 }
@@ -317,7 +317,7 @@ public struct HashableMacro: ExtensionMacro {
                                 guard let stringExpression = nameArgument.expression.as(StringLiteralExprSyntax.self) else {
                                     throw HashableMacroDiagnosticMessage(
                                         id: "invalid-isEqualToTypeFunctionName-custom-argument",
-                                        message: "Only option for 'custom' must be a string",
+                                        message: "Only option for 'custom' must be a string.",
                                         severity: .error
                                     )
                                 }
