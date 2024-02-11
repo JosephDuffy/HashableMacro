@@ -1255,6 +1255,7 @@ final class HashableMacroTests: XCTestCase {
 
     func testIsEqualToTypeFunctionNameInvalidType() throws {
         #if canImport(HashableMacroMacros)
+        #if canImport(ObjectiveC)
         assertMacro(testMacros) {
             """
             @Hashable(isEqualToTypeFunctionName: 123, _disableNSObjectSubclassSupport: false)
@@ -1275,12 +1276,15 @@ final class HashableMacroTests: XCTestCase {
             """
         }
         #else
+        throw XCTSkip("This expansion requires Objective-C")
+        #endif
         throw XCTSkip("Macros are only supported when running tests for the host platform")
         #endif
     }
 
     func testIsEqualToTypeFunctionNameInvalidName() throws {
         #if canImport(HashableMacroMacros)
+        #if canImport(ObjectiveC)
         assertMacro(testMacros) {
             """
             @Hashable(isEqualToTypeFunctionName: .invalidName, _disableNSObjectSubclassSupport: false)
@@ -1300,6 +1304,10 @@ final class HashableMacroTests: XCTestCase {
             }
             """
         }
+
+        #else
+        throw XCTSkip("This expansion requires Objective-C")
+        #endif
         #else
         throw XCTSkip("Macros are only supported when running tests for the host platform")
         #endif
@@ -1307,6 +1315,7 @@ final class HashableMacroTests: XCTestCase {
 
     func testIsEqualToTypeFunctionNameInvalidCustomNameType() throws {
         #if canImport(HashableMacroMacros)
+        #if canImport(ObjectiveC)
         assertMacro(testMacros) {
             """
             @Hashable(isEqualToTypeFunctionName: .custom(123), _disableNSObjectSubclassSupport: false)
@@ -1327,12 +1336,16 @@ final class HashableMacroTests: XCTestCase {
             """
         }
         #else
+        throw XCTSkip("This expansion requires Objective-C")
+        #endif
+        #else
         throw XCTSkip("Macros are only supported when running tests for the host platform")
         #endif
     }
 
     func testIsEqualToTypeFunctionNameInvalidCustomNameParameterCount() throws {
         #if canImport(HashableMacroMacros)
+        #if canImport(ObjectiveC)
         assertMacro(testMacros) {
             """
             @Hashable(isEqualToTypeFunctionName: .custom("name1", "name2"), _disableNSObjectSubclassSupport: false)
@@ -1353,6 +1366,8 @@ final class HashableMacroTests: XCTestCase {
             """
         }
         #else
+        throw XCTSkip("This expansion requires Objective-C")
+        #endif
         throw XCTSkip("Macros are only supported when running tests for the host platform")
         #endif
     }
