@@ -662,6 +662,25 @@ final class HashableMacroTests: XCTestCase {
                 var hashedProperty: String
             }
             """
+        } diagnostics: {
+            """
+            @Hashable(_disableNSObjectSubclassSupport: true)
+            ┬───────────────────────────────────────────────
+            ╰─ ⚠️ No hashable properties were found. All instances will be equal to each other.
+               ✏️ Add 'allowEmptyImplementation: true' to silence this warning.
+            struct TestStruct {
+                @NotHashed
+                var hashedProperty: String
+            }
+            """
+        } fixes: {
+            """
+            @Hashable(allowEmptyImplementation: true, _disableNSObjectSubclassSupport: true)
+            struct TestStruct {
+                @NotHashed
+                var hashedProperty: String
+            }
+            """
         } expansion: {
             """
             struct TestStruct {
@@ -677,6 +696,32 @@ final class HashableMacroTests: XCTestCase {
                 static func ==(lhs: TestStruct, rhs: TestStruct) -> Bool {
                     return true
                 }
+            }
+            """
+        }
+        #else
+        throw XCTSkip("Macros are only supported when running tests for the host platform")
+        #endif
+    }
+
+    func testStructWithAllExcludedPropertiesDisallowedEmptyImplementation() throws {
+        #if canImport(HashableMacroMacros)
+        assertMacro(testMacros) {
+            """
+            @Hashable(allowEmptyImplementation: false, _disableNSObjectSubclassSupport: true)
+            struct TestStruct {
+                @NotHashed
+                var hashedProperty: String
+            }
+            """
+        } diagnostics: {
+            """
+            @Hashable(allowEmptyImplementation: false, _disableNSObjectSubclassSupport: true)
+            ┬────────────────────────────────────────────────────────────────────────────────
+            ╰─ 🛑 No hashable properties were found and 'allowEmptyImplementation' is 'false'.
+            struct TestStruct {
+                @NotHashed
+                var hashedProperty: String
             }
             """
         }
@@ -1013,6 +1058,78 @@ final class HashableMacroTests: XCTestCase {
         #endif
     }
 
+    func testEnum() throws {
+        #if canImport(HashableMacroMacros)
+        assertMacro(testMacros) {
+            """
+            @Hashable(_disableNSObjectSubclassSupport: true)
+            enum TestEnum {
+                case testCase
+            }
+            """
+        } diagnostics: {
+            """
+            @Hashable(_disableNSObjectSubclassSupport: true)
+            ┬───────────────────────────────────────────────
+            ╰─ 🛑 'Hashable' is not currently supported on enums.
+            enum TestEnum {
+                case testCase
+            }
+            """
+        }
+        #else
+        throw XCTSkip("Macros are only supported when running tests for the host platform")
+        #endif
+    }
+
+    func testClassWithoutHashedProperties() throws {
+        #if canImport(HashableMacroMacros)
+        assertMacro(testMacros) {
+            """
+            @Hashable
+            class TestClass {
+                var notHashedProperty: String
+            }
+            """
+        } diagnostics: {
+            """
+            @Hashable
+            ┬────────
+            ╰─ 🛑 No properties marked with '@Hashed' were found. Synthesising Hashable conformance is not supported for classes.
+            class TestClass {
+                var notHashedProperty: String
+            }
+            """
+        }
+        #else
+        throw XCTSkip("Macros are only supported when running tests for the host platform")
+        #endif
+    }
+
+    func testActorWithoutHashedProperties() throws {
+        #if canImport(HashableMacroMacros)
+        assertMacro(testMacros) {
+            """
+            @Hashable
+            actor TestActor {
+                var notHashedProperty: String
+            }
+            """
+        } diagnostics: {
+            """
+            @Hashable
+            ┬────────
+            ╰─ 🛑 No properties marked with '@Hashed' were found. Synthesising Hashable conformance is not supported for actors.
+            actor TestActor {
+                var notHashedProperty: String
+            }
+            """
+        }
+        #else
+        throw XCTSkip("Macros are only supported when running tests for the host platform")
+        #endif
+    }
+
     // MARK: - Edge cases
 
     func testPropertyAfterIfConfig() throws {
@@ -1098,7 +1215,7 @@ final class HashableMacroTests: XCTestCase {
         #endif
     }
 
-    func testUnlablledParameter() throws {
+    func testUnlabelledParameter() throws {
         #if canImport(HashableMacroMacros)
         assertMacro(testMacros) {
             """
@@ -1132,6 +1249,125 @@ final class HashableMacroTests: XCTestCase {
             """
         }
         #else
+        throw XCTSkip("Macros are only supported when running tests for the host platform")
+        #endif
+    }
+
+    func testIsEqualToTypeFunctionNameInvalidType() throws {
+        #if canImport(HashableMacroMacros)
+        #if canImport(ObjectiveC)
+        assertMacro(testMacros) {
+            """
+            @Hashable(isEqualToTypeFunctionName: 123, _disableNSObjectSubclassSupport: false)
+            class Test: NSObject {
+                @Hashed
+                var hashablePropery: String
+            }
+            """
+        } diagnostics: {
+            """
+            @Hashable(isEqualToTypeFunctionName: 123, _disableNSObjectSubclassSupport: false)
+            ┬────────────────────────────────────────────────────────────────────────────────
+            ╰─ 🛑 'isEqualToTypeFunctionName' parameter was not of the expected type
+            class Test: NSObject {
+                @Hashed
+                var hashablePropery: String
+            }
+            """
+        }
+        #else
+        throw XCTSkip("This expansion requires Objective-C")
+        #endif
+        throw XCTSkip("Macros are only supported when running tests for the host platform")
+        #endif
+    }
+
+    func testIsEqualToTypeFunctionNameInvalidName() throws {
+        #if canImport(HashableMacroMacros)
+        #if canImport(ObjectiveC)
+        assertMacro(testMacros) {
+            """
+            @Hashable(isEqualToTypeFunctionName: .invalidName, _disableNSObjectSubclassSupport: false)
+            class Test: NSObject {
+                @Hashed
+                var hashablePropery: String
+            }
+            """
+        } diagnostics: {
+            """
+            @Hashable(isEqualToTypeFunctionName: .invalidName, _disableNSObjectSubclassSupport: false)
+            ┬─────────────────────────────────────────────────────────────────────────────────────────
+            ╰─ 🛑 'invalidName' is not a known value for `IsEqualToTypeFunctionNameGeneration`.
+            class Test: NSObject {
+                @Hashed
+                var hashablePropery: String
+            }
+            """
+        }
+
+        #else
+        throw XCTSkip("This expansion requires Objective-C")
+        #endif
+        #else
+        throw XCTSkip("Macros are only supported when running tests for the host platform")
+        #endif
+    }
+
+    func testIsEqualToTypeFunctionNameInvalidCustomNameType() throws {
+        #if canImport(HashableMacroMacros)
+        #if canImport(ObjectiveC)
+        assertMacro(testMacros) {
+            """
+            @Hashable(isEqualToTypeFunctionName: .custom(123), _disableNSObjectSubclassSupport: false)
+            class Test: NSObject {
+                @Hashed
+                var hashablePropery: String
+            }
+            """
+        } diagnostics: {
+            """
+            @Hashable(isEqualToTypeFunctionName: .custom(123), _disableNSObjectSubclassSupport: false)
+            ┬─────────────────────────────────────────────────────────────────────────────────────────
+            ╰─ 🛑 Only option for 'custom' must be a string.
+            class Test: NSObject {
+                @Hashed
+                var hashablePropery: String
+            }
+            """
+        }
+        #else
+        throw XCTSkip("This expansion requires Objective-C")
+        #endif
+        #else
+        throw XCTSkip("Macros are only supported when running tests for the host platform")
+        #endif
+    }
+
+    func testIsEqualToTypeFunctionNameInvalidCustomNameParameterCount() throws {
+        #if canImport(HashableMacroMacros)
+        #if canImport(ObjectiveC)
+        assertMacro(testMacros) {
+            """
+            @Hashable(isEqualToTypeFunctionName: .custom("name1", "name2"), _disableNSObjectSubclassSupport: false)
+            class Test: NSObject {
+                @Hashed
+                var hashablePropery: String
+            }
+            """
+        } diagnostics: {
+            """
+            @Hashable(isEqualToTypeFunctionName: .custom("name1", "name2"), _disableNSObjectSubclassSupport: false)
+            ┬──────────────────────────────────────────────────────────────────────────────────────────────────────
+            ╰─ 🛑 Only 1 argument is supported for 'custom'.
+            class Test: NSObject {
+                @Hashed
+                var hashablePropery: String
+            }
+            """
+        }
+        #else
+        throw XCTSkip("This expansion requires Objective-C")
+        #endif
         throw XCTSkip("Macros are only supported when running tests for the host platform")
         #endif
     }
@@ -1384,42 +1620,22 @@ final class HashableMacroTests: XCTestCase {
     func testNSObjectSubclassWithoutHashedProperties() throws {
         #if canImport(HashableMacroMacros)
         #if canImport(ObjectiveC)
-        #warning("TODO: Synthesising properties should not be supported for classes")
         assertMacro(testMacros) {
             """
-            @Hashable(_disableNSObjectSubclassSupport: false)
+            @Hashable
             class TestClass: NSObject {
                 @NotHashed
                 var notHashedProperty: String
             }
             """
-        } expansion: {
+        } diagnostics: {
             """
+            @Hashable
+            ┬────────
+            ╰─ 🛑 No properties marked with '@Hashed' were found. Synthesising Hashable conformance is not supported for classes.
             class TestClass: NSObject {
+                @NotHashed
                 var notHashedProperty: String
-            }
-
-            extension TestClass {
-                override var hash: Int {
-                    let hasher = Hasher()
-                    return hasher.finalize()
-                }
-            }
-
-            extension TestClass {
-                override func isEqual(_ object: Any?) -> Bool {
-                    guard let object = object as? TestClass else {
-                        return false
-                    }
-                    guard type(of: self) == type(of: object) else {
-                        return false
-                    }
-                    return self.isEqual(to: object)
-                }
-                @objc(isEqualToTestClass:)
-                final func isEqual(to object: TestClass) -> Bool {
-                    return true
-                }
             }
             """
         }

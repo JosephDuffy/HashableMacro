@@ -164,7 +164,17 @@ public class HashableClassWithNonFinalHashInto: Hashable {
 /// A type that explicitly conforms to `Hashable`; the macro should not try to
 /// add conformance (but it should still add the implementation required).
 @Hashable
-public class TypeExplicitlyConformingToHashable: Hashable {}
+public struct TypeExplicitlyConformingToHashable: Hashable {
+    public var property: String?
+}
+
+/// A type that explicitly conforms to `Equatable`; the macro should not try to
+/// add conformance for `Equatable`, but it should still add conformance for
+/// `Hashable` and the implementations required.
+@Hashable
+public struct TypeExplicitlyConformingToEquatable: Equatable {
+    public var property: String?
+}
 
 /// A type that includes multiple properties declared on the same line.
 ///
@@ -215,11 +225,11 @@ struct CustomEqualityStruct {
     var hashedProperty: String = ""
 }
 
+@Hashable(allowEmptyImplementation: true)
+struct StructWithoutExtraProperties {}
+
 #if canImport(ObjectiveC)
 import ObjectiveC
-
-@Hashable
-class NSObjectSubclassWithoutExtraProperties: NSObject {}
 
 @Hashable
 class NSObjectSubclass: NSObject {

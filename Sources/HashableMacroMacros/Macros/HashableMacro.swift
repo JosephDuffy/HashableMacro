@@ -15,6 +15,14 @@ public struct HashableMacro: ExtensionMacro {
         conformingTo protocols: [TypeSyntax],
         in context: some MacroExpansionContext
     ) throws -> [ExtensionDeclSyntax] {
+        guard !declaration.is(EnumDeclSyntax.self) else {
+            throw HashableMacroDiagnosticMessage(
+                id: "enum-not-supported",
+                message: "'Hashable' is not currently supported on enums.",
+                severity: .error
+            )
+        }
+
         // The macro declares that it can add `NSObjectProtocol`, but this is
         // used to check whether the compiler asks for it to be added. If the
         // macro is asked to add `NSObjectProtocol` conformance then we know
@@ -50,6 +58,37 @@ public struct HashableMacro: ExtensionMacro {
                     message: "Unknown protocol: '\(protocolType.trimmedDescription)'",
                     severity: .error
                 )
+            }
+        }
+
+        var allowEmptyImplementation: Bool?
+
+        if let arguments = node.arguments?.as(LabeledExprListSyntax.self) {
+            for argument in arguments {
+                switch argument.label?.trimmed.text {
+                case "allowEmptyImplementation":
+                    guard let expression = argument.expression.as(BooleanLiteralExprSyntax.self) else { continue }
+                    switch expression.literal.tokenKind {
+                    case .keyword(.true):
+                        allowEmptyImplementation = true
+                    case .keyword(.false):
+                        allowEmptyImplementation = false
+                    default:
+                        break
+                    }
+                #if canImport(ObjectiveC) && DEBUG
+                case "_disableNSObjectSubclassSupport":
+                    guard let expression = argument.expression.as(BooleanLiteralExprSyntax.self) else { continue }
+                    switch expression.literal.tokenKind {
+                    case .keyword(.true):
+                        isNSObjectSubclass = false
+                    default:
+                        break
+                    }
+                #endif
+                default:
+                    break
+                }
             }
         }
 
@@ -133,7 +172,78 @@ public struct HashableMacro: ExtensionMacro {
             }
         }
 
-        let propertiesToHash = !explicitlyHashedProperties.isEmpty ? explicitlyHashedProperties : undecoratedProperties
+        let propertiesToHash: [TokenSyntax]
+
+        if !explicitlyHashedProperties.isEmpty {
+            propertiesToHash = explicitlyHashedProperties
+        } else if declaration.is(StructDeclSyntax.self) {
+            propertiesToHash = undecoratedProperties
+        } else if declaration.is(ClassDeclSyntax.self) {
+            // We can't know if properties are added in a superclass, plus Swift
+            // itself does not support this.
+            throw HashableMacroDiagnosticMessage(
+                id: "synthesised-properties-not-supported-class",
+                message: "No properties marked with '@Hashed' were found. Synthesising Hashable conformance is not supported for classes.",
+                severity: .error
+            )
+        } else if declaration.is(ActorDeclSyntax.self) {
+            // Swift itself does not support this, probably for a good reason.
+            throw HashableMacroDiagnosticMessage(
+                id: "synthesised-properties-not-supported-actor",
+                message: "No properties marked with '@Hashed' were found. Synthesising Hashable conformance is not supported for actors.",
+                severity: .error
+            )
+        } else {
+            throw HashableMacroDiagnosticMessage(
+                id: "synthesised-properties-not-supported-unknown",
+                message: "No properties marked with '@Hashed' were found. Synthesising Hashable conformance is not supported for this type.",
+                severity: .error
+            )
+        }
+
+        if propertiesToHash.isEmpty {
+            switch allowEmptyImplementation {
+            case .some(true):
+                break
+            case .some(false):
+                throw HashableMacroDiagnosticMessage(
+                    id: "no-properties-to-hash-disallowed",
+                    message: "No hashable properties were found and 'allowEmptyImplementation' is 'false'.",
+                    severity: .error
+                )
+            case nil:
+                var arguments = node.arguments?.as(LabeledExprListSyntax.self) ?? LabeledExprListSyntax()
+                arguments.addOrUpdateHashableArgument(
+                    label: "allowEmptyImplementation",
+                    expression: BooleanLiteralExprSyntax(booleanLiteral: true)
+                )
+                var fixedNode = node
+                fixedNode.arguments = .argumentList(arguments)
+                fixedNode.leftParen = .leftParenToken()
+                fixedNode.rightParen = .rightParenToken()
+                let diagnostic = Diagnostic(
+                    node: node,
+                    message: HashableMacroDiagnosticMessage(
+                        id: "no-properties-to-hash",
+                        message: "No hashable properties were found. All instances will be equal to each other.",
+                        severity: .warning
+                    ),
+                    fixIt: FixIt(
+                        message: HashableMacroFixItMessage(
+                            id: "redundant-not-hashed",
+                            message: "Add 'allowEmptyImplementation: true' to silence this warning."
+                        ),
+                        changes: [
+                            FixIt.Change.replace(
+                                oldNode: Syntax(node),
+                                newNode: Syntax(fixedNode)
+                            )
+                        ]
+                    )
+                )
+                context.diagnose(diagnostic)
+            }
+        }
 
         #if canImport(ObjectiveC)
         #if DEBUG
@@ -160,7 +270,7 @@ public struct HashableMacro: ExtensionMacro {
         }
         #endif
         if isNSObjectSubclass {
-            guard let classDeclaration = declaration as? ClassDeclSyntax else {
+            guard let classDeclaration = declaration.as(ClassDeclSyntax.self) else {
                 throw HashableMacroDiagnosticMessage(
                     id: "nsobject-subclass-not-class",
                     message: "This type conforms to 'NSObjectProtocol' but is not a class",
@@ -181,7 +291,7 @@ public struct HashableMacro: ExtensionMacro {
                             default:
                                 throw HashableMacroDiagnosticMessage(
                                     id: "unknown-isEqualToTypeFunctionName-name",
-                                    message: "'\(expression.declName.baseName)' is not a known value for `IsEqualToTypeFunctionNameGeneration`",
+                                    message: "'\(expression.declName.baseName)' is not a known value for `IsEqualToTypeFunctionNameGeneration`.",
                                     severity: .error
                                 )
                             }
@@ -198,7 +308,7 @@ public struct HashableMacro: ExtensionMacro {
                                 guard functionExpression.arguments.count == 1 else {
                                     throw HashableMacroDiagnosticMessage(
                                         id: "invalid-isEqualToTypeFunctionName-argument",
-                                        message: "Only 1 argument is supported for 'custom'",
+                                        message: "Only 1 argument is supported for 'custom'.",
                                         severity: .error
                                     )
                                 }
@@ -207,7 +317,7 @@ public struct HashableMacro: ExtensionMacro {
                                 guard let stringExpression = nameArgument.expression.as(StringLiteralExprSyntax.self) else {
                                     throw HashableMacroDiagnosticMessage(
                                         id: "invalid-isEqualToTypeFunctionName-custom-argument",
-                                        message: "Only option for 'custom' must be a string",
+                                        message: "Only option for 'custom' must be a string.",
                                         severity: .error
                                     )
                                 }
