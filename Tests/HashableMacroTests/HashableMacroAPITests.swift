@@ -5,7 +5,6 @@
 import HashableMacro
 import Foundation
 
-#if compiler(>=5.9.2)
 @Hashable
 public struct PublicStruct {
     @Hashed
@@ -235,7 +234,7 @@ import ObjectiveC
 class NSObjectSubclass: NSObject {
     @Hashed
     var nsObjectSubclassProperty: String
-    
+
     init(nsObjectSubclassProperty: String) {
         self.nsObjectSubclassProperty = nsObjectSubclassProperty
     }
@@ -250,5 +249,4 @@ public class NSObjectSubclassCustomEqualTo: NSObject {
         self.nsObjectSubclassProperty = nsObjectSubclassProperty
     }
 }
-#endif
 #endif

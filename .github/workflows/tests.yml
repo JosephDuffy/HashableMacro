@@ -13,11 +13,11 @@ concurrency:
 jobs:
   macos_tests:
     name: macOS Tests (SwiftPM, Xcode ${{ matrix.xcode }})
-    runs-on: "macos-13"
+    runs-on: "macos-14"
     strategy:
       fail-fast: false
       matrix:
-        xcode: ["15.0.1", "15.1"]
+        xcode: ["15.1", "15.3"]
 
     steps:
       - uses: actions/checkout@v4
@@ -55,11 +55,11 @@ jobs:
 
   xcode_tests:
     name: ${{ matrix.platform }} Tests (Xcode ${{ matrix.xcode }})
-    runs-on: macos-13
+    runs-on: macos-14
     strategy:
       fail-fast: false
       matrix:
-        xcode: ["15.0.1", "15.1"]
+        xcode: ["15.1", "15.3"]
         platform: ["macOS", "iOS", "tvOS", "watchOS", "macCatalyst", "visionOS"]
 
     steps:
@@ -118,7 +118,7 @@ jobs:
       fail-fast: false
       matrix:
         os: ["ubuntu-latest"]
-        swift: ["5.9.0", "5.9.2"]
+        swift: ["5.9.2", "5.10"]
 
     steps:
       - uses: actions/checkout@v4
