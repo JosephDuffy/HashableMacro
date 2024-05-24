@@ -32,15 +32,11 @@ import HashableMacroFoundation
 ///   properties that contribute to the `Hashable` conformance the macro will
 ///   produce a warning. When `true` this warning is suppressed. When `false`
 ///   the warning will be elevated to an error.
-#if compiler(>=5.9.2)
 @attached(
-    extension, 
-    conformances: Hashable, Equatable, NSObjectProtocol, 
+    extension,
+    conformances: Hashable, Equatable, NSObjectProtocol,
     names: named(hash(into:)), named(==), named(hash), named(isEqual(_:)), named(isEqual(to:)), arbitrary
 )
-#else
-@attached(extension)
-#endif
 public macro Hashable(
     finalHashInto: Bool = true,
     isEqualToTypeFunctionName: IsEqualToTypeFunctionNameGeneration = .automatic,
@@ -63,12 +59,8 @@ public macro Hashable(
 /// - parameter allowEmptyImplementation: When `nil` (default) and there are no
 ///   properties that contribute to the `Hashable` conformance the macro will
 ///   produce a warning. When `true` this warning is suppressed. When `false`
-///   the warning will be elevated to an error.   
-#if compiler(>=5.9.2)
+///   the warning will be elevated to an error.
 @attached(extension, conformances: Hashable, Equatable, names: named(hash), named(==))
-#else
-@attached(extension)
-#endif
 public macro Hashable(
     finalHashInto: Bool = true,
     allowEmptyImplementation: Bool? = nil

@@ -19,7 +19,6 @@ private let testMacros: [String: Macro.Type] = Dictionary(
 #endif
 
 final class HashableMacroTests: XCTestCase {
-    #if compiler(>=5.9.2)
     /// Test the usage of the `Hashable` API using a type decorated with the `@Hashable` macro
     /// that has been expanded by the compiler to check that the expanded implementation is honoured
     /// when compiled.
@@ -1961,27 +1960,4 @@ final class HashableMacroTests: XCTestCase {
         throw XCTSkip("Macros are only supported when running tests for the host platform")
         #endif
     }
-    #else
-    func testUnavailableSwift5_9_2() throws {
-        #if canImport(HashableMacroMacros)
-        assertMacro(testMacros) {
-            """
-            @Hashable
-            struct Test {
-            }
-            """
-        } diagnostics: {
-            """
-            @Hashable
-            ┬────────
-            ╰─ 🛑 '@Hashable' requires Swift 5.9.2 or newer
-            struct Test {
-            }
-            """
-        }
-        #else
-        throw XCTSkip("Macros are only supported when running tests for the host platform")
-        #endif
-    }
-    #endif
 }

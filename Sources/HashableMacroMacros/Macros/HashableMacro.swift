@@ -6,7 +6,6 @@ import SwiftDiagnostics
 import SwiftSyntax
 import SwiftSyntaxMacros
 
-#if compiler(>=5.9.2)
 public struct HashableMacro: ExtensionMacro {
     public static func expansion(
         of node: AttributeSyntax,
@@ -439,20 +438,3 @@ public struct HashableMacro: ExtensionMacro {
         return protocolExtensions
     }
 }
-#else
-public struct HashableMacro: ExtensionMacro {
-    public static func expansion(
-        of node: AttributeSyntax,
-        attachedTo declaration: some DeclGroupSyntax,
-        providingExtensionsOf type: some TypeSyntaxProtocol,
-        conformingTo protocols: [TypeSyntax],
-        in context: some MacroExpansionContext
-    ) throws -> [ExtensionDeclSyntax] {
-        throw HashableMacroDiagnosticMessage(
-            id: "hashable-macro-unavailable",
-            message: "'@Hashable' requires Swift 5.9.2 or newer",
-            severity: .error
-        )
-    }
-}
-#endif

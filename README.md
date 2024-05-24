@@ -1,7 +1,7 @@
 # HashableMacro
 
 > [!WARNING]
-> This package requires Swift 5.9.2, which ships with Xcode 15.1. It is possible to add this package in Xcode 15.0 and 15.0.1 but the `@Hashable` macro will not be available.
+> This package requires Swift 5.9.2, which ships with Xcode 15.1. This package will fail to compile with Swift 5.9.0 (Xcode 15.0 and 15.0.1).
 
 `@Hashable` is a Swift macro for adding `Hashable` conformance. It is particularly useful when synthesised conformance is not possible, such as with classes or a struct with 1 or more non-hashable properties.
 
