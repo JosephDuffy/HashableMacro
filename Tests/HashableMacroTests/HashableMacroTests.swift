@@ -188,6 +188,73 @@ final class HashableMacroTests: XCTestCase {
         #endif
     }
 
+    func testEmbeddedType() throws {
+        #if canImport(HashableMacroMacros)
+        assertMacro(testMacros) {
+            """
+            enum Outer {
+                @Hashable(_disableNSObjectSubclassSupport: true)
+                struct InnerStruct {
+                    let hashedProperty: String
+                }
+
+                @Hashable(fullyQualifiedName: "Outer.InnerClass", _disableNSObjectSubclassSupport: true)
+                class InnerClass {
+                    @Hashed
+                    let hashedProperty: String
+
+                    init(hashedProperty: String) {
+                        self.hashedProperty = hashedProperty
+                    }
+                }
+            }
+            """
+        } expansion: {
+            // This should be e.g. `extension Outer.InnerStruct` but the tester does not output this.
+            """
+            enum Outer {
+                struct InnerStruct {
+                    let hashedProperty: String
+                }
+                class InnerClass {
+                    let hashedProperty: String
+
+                    init(hashedProperty: String) {
+                        self.hashedProperty = hashedProperty
+                    }
+                }
+            }
+
+            extension InnerStruct {
+                func hash(into hasher: inout Hasher) {
+                    hasher.combine(self.hashedProperty)
+                }
+            }
+
+            extension InnerStruct {
+                static func ==(lhs: Self, rhs: Self) -> Bool {
+                    return lhs.hashedProperty == rhs.hashedProperty
+                }
+            }
+
+            extension InnerClass {
+                final func hash(into hasher: inout Hasher) {
+                    hasher.combine(self.hashedProperty)
+                }
+            }
+
+            extension InnerClass {
+                static func ==(lhs: Outer.InnerClass, rhs: Outer.InnerClass) -> Bool {
+                    return lhs.hashedProperty == rhs.hashedProperty
+                }
+            }
+            """
+        }
+        #else
+        throw XCTSkip("Macros are only supported when running tests for the host platform")
+        #endif
+    }
+
     func testPublicStruct() throws {
         #if canImport(HashableMacroMacros)
         assertMacro(testMacros) {
@@ -211,7 +278,7 @@ final class HashableMacroTests: XCTestCase {
             }
 
             extension PublicStruct {
-                public static func ==(lhs: PublicStruct, rhs: PublicStruct) -> Bool {
+                public static func ==(lhs: Self, rhs: Self) -> Bool {
                     return lhs.hashableProperty == rhs.hashableProperty
                 }
             }
@@ -245,7 +312,7 @@ final class HashableMacroTests: XCTestCase {
             }
 
             extension PackageStruct {
-                package static func ==(lhs: PackageStruct, rhs: PackageStruct) -> Bool {
+                package static func ==(lhs: Self, rhs: Self) -> Bool {
                     return lhs.hashableProperty == rhs.hashableProperty
                 }
             }
@@ -279,7 +346,7 @@ final class HashableMacroTests: XCTestCase {
             }
 
             extension ExplicitInternalStruct {
-                internal static func ==(lhs: ExplicitInternalStruct, rhs: ExplicitInternalStruct) -> Bool {
+                internal static func ==(lhs: Self, rhs: Self) -> Bool {
                     return lhs.hashableProperty == rhs.hashableProperty
                 }
             }
@@ -313,7 +380,7 @@ final class HashableMacroTests: XCTestCase {
             }
 
             extension FileprivateStruct {
-                fileprivate static func ==(lhs: FileprivateStruct, rhs: FileprivateStruct) -> Bool {
+                fileprivate static func ==(lhs: Self, rhs: Self) -> Bool {
                     return lhs.hashableProperty == rhs.hashableProperty
                 }
             }
@@ -347,7 +414,7 @@ final class HashableMacroTests: XCTestCase {
             }
 
             extension PrivateStruct {
-                static func ==(lhs: PrivateStruct, rhs: PrivateStruct) -> Bool {
+                static func ==(lhs: Self, rhs: Self) -> Bool {
                     return lhs.hashableProperty == rhs.hashableProperty
                 }
             }
@@ -399,7 +466,7 @@ final class HashableMacroTests: XCTestCase {
             }
 
             extension TypeNotExplicitlyConformingToHashable {
-                static func ==(lhs: TypeNotExplicitlyConformingToHashable, rhs: TypeNotExplicitlyConformingToHashable) -> Bool {
+                static func ==(lhs: Self, rhs: Self) -> Bool {
                     return lhs.hashablePropery1 == rhs.hashablePropery1
                         && lhs.hashablePropery2 == rhs.hashablePropery2
                         && lhs.hashablePropery3 == rhs.hashablePropery3
@@ -434,7 +501,7 @@ final class HashableMacroTests: XCTestCase {
             }
 
             extension TypeWithoutHashableKeys {
-                static func ==(lhs: TypeWithoutHashableKeys, rhs: TypeWithoutHashableKeys) -> Bool {
+                static func ==(lhs: Self, rhs: Self) -> Bool {
                     return lhs.notHashedProperty == rhs.notHashedProperty
                 }
             }
@@ -468,7 +535,7 @@ final class HashableMacroTests: XCTestCase {
             }
 
             extension TypeWithExplicitHashableConformation {
-                static func ==(lhs: TypeWithExplicitHashableConformation, rhs: TypeWithExplicitHashableConformation) -> Bool {
+                static func ==(lhs: Self, rhs: Self) -> Bool {
                     return lhs.hashedProperty == rhs.hashedProperty
                 }
             }
@@ -502,7 +569,7 @@ final class HashableMacroTests: XCTestCase {
             }
 
             extension PublicType {
-                public static func ==(lhs: PublicType, rhs: PublicType) -> Bool {
+                public static func ==(lhs: Self, rhs: Self) -> Bool {
                     return lhs.hashedProperty == rhs.hashedProperty
                 }
             }
@@ -536,7 +603,7 @@ final class HashableMacroTests: XCTestCase {
             }
 
             extension ExplicitlyInternalType {
-                internal static func ==(lhs: ExplicitlyInternalType, rhs: ExplicitlyInternalType) -> Bool {
+                internal static func ==(lhs: Self, rhs: Self) -> Bool {
                     return lhs.hashedProperty == rhs.hashedProperty
                 }
             }
@@ -570,7 +637,7 @@ final class HashableMacroTests: XCTestCase {
             }
 
             extension FilePrivateType {
-                fileprivate static func ==(lhs: FilePrivateType, rhs: FilePrivateType) -> Bool {
+                fileprivate static func ==(lhs: Self, rhs: Self) -> Bool {
                     return lhs.hashedProperty == rhs.hashedProperty
                 }
             }
@@ -604,7 +671,7 @@ final class HashableMacroTests: XCTestCase {
             }
 
             extension PrivateType {
-                static func ==(lhs: PrivateType, rhs: PrivateType) -> Bool {
+                static func ==(lhs: Self, rhs: Self) -> Bool {
                     return lhs.hashedProperty == rhs.hashedProperty
                 }
             }
@@ -639,7 +706,7 @@ final class HashableMacroTests: XCTestCase {
             }
 
             extension TestStruct {
-                static func ==(lhs: TestStruct, rhs: TestStruct) -> Bool {
+                static func ==(lhs: Self, rhs: Self) -> Bool {
                     return lhs.hashedProperty == rhs.hashedProperty
                         && lhs.secondHashedProperty == rhs.secondHashedProperty
                 }
@@ -692,7 +759,7 @@ final class HashableMacroTests: XCTestCase {
             }
 
             extension TestStruct {
-                static func ==(lhs: TestStruct, rhs: TestStruct) -> Bool {
+                static func ==(lhs: Self, rhs: Self) -> Bool {
                     return true
                 }
             }
@@ -892,7 +959,7 @@ final class HashableMacroTests: XCTestCase {
             }
 
             extension TypeWithComputedPropertt {
-                static func ==(lhs: TypeWithComputedPropertt, rhs: TypeWithComputedPropertt) -> Bool {
+                static func ==(lhs: Self, rhs: Self) -> Bool {
                     return lhs.hashedProperty == rhs.hashedProperty
                 }
             }
@@ -938,7 +1005,7 @@ final class HashableMacroTests: XCTestCase {
             }
 
             extension TypeWithComputedPropertt {
-                static func ==(lhs: TypeWithComputedPropertt, rhs: TypeWithComputedPropertt) -> Bool {
+                static func ==(lhs: Self, rhs: Self) -> Bool {
                     return lhs.hashedProperty == rhs.hashedProperty
                 }
             }
@@ -984,7 +1051,7 @@ final class HashableMacroTests: XCTestCase {
             }
 
             extension TypeWithComputedPropertt {
-                static func ==(lhs: TypeWithComputedPropertt, rhs: TypeWithComputedPropertt) -> Bool {
+                static func ==(lhs: Self, rhs: Self) -> Bool {
                     return lhs.hashedProperty == rhs.hashedProperty
                         && lhs.otherHashedProperty == rhs.otherHashedProperty
                 }
@@ -1046,7 +1113,7 @@ final class HashableMacroTests: XCTestCase {
             }
 
             extension TypeWithMixedHashedNotHashed {
-                static func ==(lhs: TypeWithMixedHashedNotHashed, rhs: TypeWithMixedHashedNotHashed) -> Bool {
+                static func ==(lhs: Self, rhs: Self) -> Bool {
                     return lhs.hashedProperty == rhs.hashedProperty
                 }
             }
@@ -1162,7 +1229,7 @@ final class HashableMacroTests: XCTestCase {
             }
 
             extension Test {
-                static func ==(lhs: Test, rhs: Test) -> Bool {
+                static func ==(lhs: Self, rhs: Self) -> Bool {
                     return lhs.hashablePropery == rhs.hashablePropery
                 }
             }

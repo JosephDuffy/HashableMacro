@@ -115,17 +115,42 @@ extension HashableMacro {
             )
         }
 
+        var customFullyQualifiedName: String?
+
+        if let arguments = node.arguments?.as(LabeledExprListSyntax.self) {
+            for argument in arguments {
+                guard let label = argument.label else { continue }
+                switch label.trimmed.text {
+                case "fullyQualifiedName":
+                    guard let stringExpression = argument.expression.as(StringLiteralExprSyntax.self) else { continue }
+                    customFullyQualifiedName = "\(stringExpression.segments)"
+                default:
+                    break
+                }
+            }
+        }
+
+        let hashableType: IdentifierTypeSyntax
+
+        if let customFullyQualifiedName {
+            hashableType = IdentifierTypeSyntax(name: .identifier(customFullyQualifiedName))
+        } else if declaration.is(StructDeclSyntax.self) {
+            hashableType = IdentifierTypeSyntax(name: .keyword(.Self))
+        } else {
+            hashableType = IdentifierTypeSyntax(name: .identifier(namedDeclaration.name.text))
+        }
+
         let equalsFunctionSignature = FunctionSignatureSyntax(
             parameterClause: FunctionParameterClauseSyntax(
                 parameters: [
                     FunctionParameterSyntax(
                         firstName: .identifier("lhs"),
-                        type: TypeSyntax(stringLiteral: namedDeclaration.name.text),
+                        type: hashableType,
                         trailingComma: .commaToken()
                     ),
                     FunctionParameterSyntax(
                         firstName: .identifier("rhs"),
-                        type: TypeSyntax(stringLiteral: namedDeclaration.name.text)
+                        type: hashableType
                     ),
                 ]
             ),
