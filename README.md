@@ -1,5 +1,7 @@
 # HashableMacro
 
+[![Platforms](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2FJosephDuffy%2FHashableMacro%2Fbadge%3Ftype%3Dplatforms)](https://swiftpackageindex.com/JosephDuffy/HashableMacro)
+
 > [!WARNING]
 > This package requires Swift 5.9.2, which ships with Xcode 15.1. This package will fail to compile with Swift 5.9.0 (Xcode 15.0 and 15.0.1).
 
@@ -29,6 +31,8 @@ struct MyStruct {
 All decorated properties are included in both the `==` and `hash(into:)` implementations, ensuring the [contract of `Hashable`](<https://developer.apple.com/documentation/swift/hashable#:~:text=Two%20instances%20that%20are%20equal%20must%20feed%20the%20same%20values%20to%20Hasher%20in%20hash(into%3A)%2C%20in%20the%20same%20order.>) is upheld:
 
 > Two instances that are equal must feed the same values to `Hasher` in `hash(into:)`, in the same order.
+
+[DocC documentation for HashableMacro is hosted by Swift Package Index](https://swiftpackageindex.com/JosephDuffy/HashableMacro/main/documentation/hashablemacro). Most of the implementation can be seen in the [Macros.swift file](./Sources/HashableMacro/Macros.swift).
 
 ## `@NotHashed` Macro
 
