@@ -28,6 +28,8 @@ import HashableMacroFoundation
 ///   `isEqual(to:)` function from Objective-C. Defaults to using the name of
 ///   the class the macro is attached to. This only applies to types that
 ///   conform to `NSObjectProtocol`.
+/// - parameter fullyQualifiedName: The fully qualified name of the type. This is required when
+///   adding the macro to a class that is nested in another type.
 /// - parameter allowEmptyImplementation: When `nil` (default) and there are no
 ///   properties that contribute to the `Hashable` conformance the macro will
 ///   produce a warning. When `true` this warning is suppressed. When `false`
@@ -40,6 +42,7 @@ import HashableMacroFoundation
 public macro Hashable(
     finalHashInto: Bool = true,
     isEqualToTypeFunctionName: IsEqualToTypeFunctionNameGeneration = .automatic,
+    fullyQualifiedName: String? = nil,
     allowEmptyImplementation: Bool? = nil
 ) = #externalMacro(module: "HashableMacroMacros", type: "HashableMacro")
 #else
@@ -56,6 +59,8 @@ public macro Hashable(
 ///   class, the `hash(into:)` function will be marked `final`. This helps avoid
 ///   a pitfall when subclassing an `Equatable` class: the `==` function cannot
 ///   be overridden in a subclass and `==` will always use the superclass.
+/// - parameter fullyQualifiedName: The fully qualified name of the type. This is required when
+///   adding the macro to a class that is nested in another type.
 /// - parameter allowEmptyImplementation: When `nil` (default) and there are no
 ///   properties that contribute to the `Hashable` conformance the macro will
 ///   produce a warning. When `true` this warning is suppressed. When `false`
@@ -63,6 +68,7 @@ public macro Hashable(
 @attached(extension, conformances: Hashable, Equatable, names: named(hash), named(==))
 public macro Hashable(
     finalHashInto: Bool = true,
+    fullyQualifiedName: String? = nil,
     allowEmptyImplementation: Bool? = nil
 ) = #externalMacro(module: "HashableMacroMacros", type: "HashableMacro")
 #endif
