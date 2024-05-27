@@ -124,6 +124,23 @@ struct HashableStructWithExplictlyHashedComputedProperty {
     }
 }
 
+enum OuterType {
+    @Hashable
+    struct InnerStruct {
+        let hashedProperty: String
+    }
+
+    @Hashable(fullyQualifiedName: "OuterType.InnerClass")
+    class InnerClass {
+        @Hashed
+        let hashedProperty: String
+
+        init(hashedProperty: String) {
+            self.hashedProperty = hashedProperty
+        }
+    }
+}
+
 @Hashable
 public class HashableClassWithPrivateProperty: Hashable {
     @Hashed
