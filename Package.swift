@@ -10,6 +10,7 @@ let package = Package(
     .tvOS(.v13),
     .watchOS(.v6),
     .macCatalyst(.v13),
+    .visionOS(.v1),
   ],
   products: [
     .library(
@@ -34,7 +35,7 @@ let package = Package(
             .targetItem(
                 name: "HashableMacroFoundation",
                 condition: .when(
-                    platforms: [.macOS, .iOS, .tvOS, .watchOS, .macCatalyst]
+                    platforms: [.macOS, .iOS, .tvOS, .watchOS, .macCatalyst, .visionOS]
                 )
             ),
             "HashableMacroMacros",

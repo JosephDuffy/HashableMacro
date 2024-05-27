@@ -60,7 +60,11 @@ jobs:
       fail-fast: false
       matrix:
         xcode: ["15.1", "15.3"]
-        platform: ["macOS", "iOS", "tvOS", "watchOS", "macCatalyst"]
+        platform: ["macOS", "iOS", "tvOS", "watchOS", "macCatalyst", "visionOS"]
+        exclude:
+          # There are no visionOS simulators available on GitHub Actions using Xcode 15.1
+          - xcode: "15.1"
+            platform: "visionOS"
 
     steps:
       - uses: actions/checkout@v4
