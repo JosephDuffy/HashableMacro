@@ -148,8 +148,8 @@ jobs:
 
       - uses: compnerd/gha-setup-swift@main
         with:
-          branch: "swift-5.10.0-release"
-          tag: "5.10.0-RELEASE"
+          branch: "swift-5.10-release"
+          tag: "5.10-RELEASE"
 
       - name: swift test
         run: swift test
