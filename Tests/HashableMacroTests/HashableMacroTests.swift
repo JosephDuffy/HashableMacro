@@ -288,6 +288,43 @@ final class HashableMacroTests: XCTestCase {
         throw XCTSkip("Macros are only supported when running tests for the host platform")
         #endif
     }
+    
+    func testSkipStaticProperties() throws {
+        #if canImport(HashableMacroMacros)
+        assertMacro(testMacros) {
+            """
+            @Hashable(_disableNSObjectSubclassSupport: true)
+            struct StructWithStaticProperties {
+                var hashableProperty: String
+                static var staticVar: String = "hello"
+                static let staticLet: String
+            }
+            """
+        } expansion: {
+            """
+            struct StructWithStaticProperties {
+                var hashableProperty: String
+                static var staticVar: String = "hello"
+                static let staticLet: String
+            }
+
+            extension StructWithStaticProperties {
+                func hash(into hasher: inout Hasher) {
+                    hasher.combine(self.hashableProperty)
+                }
+            }
+
+            extension StructWithStaticProperties {
+                static func ==(lhs: Self, rhs: Self) -> Bool {
+                    return lhs.hashableProperty == rhs.hashableProperty
+                }
+            }
+            """
+        }
+        #else
+        throw XCTSkip("Macros are only supported when running tests for the host platform")
+        #endif
+    }
 
     func testPackageStruct() throws {
         #if canImport(HashableMacroMacros)

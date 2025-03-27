@@ -91,7 +91,9 @@ public struct HashableMacro: ExtensionMacro {
             }
         }
 
-        let properties = declaration.memberBlock.members.compactMap({ $0.decl.as(VariableDeclSyntax.self) })
+        let properties = declaration.memberBlock.members
+            .compactMap({ $0.decl.as(VariableDeclSyntax.self) })
+            .filter { property in property.modifiers.first(where: { $0.name.text == "static" }) == nil } // filter out static properties
         var explicitlyHashedProperties: [TokenSyntax] = []
         var undecoratedProperties: [TokenSyntax] = []
         var notHashedAttributes: [AttributeSyntax] = []
