@@ -91,21 +91,21 @@ public struct HashableMacro: ExtensionMacro {
             }
         }
 
-        let properties = declaration.memberBlock.members
+        let hashedVariableCandidates = declaration.memberBlock.members
             .compactMap { $0.decl.as(VariableDeclSyntax.self) }
             .filter(HashedMacro.isSupportedOnVariable(_:))
         var explicitlyHashedProperties: [TokenSyntax] = []
         var undecoratedProperties: [TokenSyntax] = []
         var notHashedAttributes: [AttributeSyntax] = []
 
-        for property in properties {
-            let bindings = property.bindings.compactMap({ binding in
+        for variable in hashedVariableCandidates {
+            let bindings = variable.bindings.compactMap({ binding in
                 binding
                     .pattern
                     .as(IdentifierPatternSyntax.self)?
                     .identifier
             })
-            lazy var isCalculated = property.bindings.contains { binding in
+            lazy var isCalculated = variable.bindings.contains { binding in
                 guard let accessorBlock = binding.accessorBlock else { return false }
                 switch accessorBlock.accessors {
                 case .getter:
@@ -124,7 +124,7 @@ public struct HashableMacro: ExtensionMacro {
             }
 
             func attribute(named macroName: String) -> AttributeSyntax? {
-                for attribute in property.attributes {
+                for attribute in variable.attributes {
                     guard let attribute = attribute.as(AttributeSyntax.self) else { continue }
                     let identifier = attribute
                         .attributeName
