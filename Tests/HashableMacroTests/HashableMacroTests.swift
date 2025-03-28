@@ -1452,7 +1452,7 @@ final class HashableMacroTests: XCTestCase {
             """
             @Hashable(_disableNSObjectSubclassSupport: true)
             ┬───────────────────────────────────────────────
-            ╰─ 🛑 'Hashable' is not currently supported on enums.
+            ╰─ 🛑 '@Hashable' is not currently supported on enums.
             enum TestEnum {
                 case testCase
             }

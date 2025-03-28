@@ -17,7 +17,7 @@ public struct HashableMacro: ExtensionMacro {
         guard !declaration.is(EnumDeclSyntax.self) else {
             throw HashableMacroDiagnosticMessage(
                 id: "enum-not-supported",
-                message: "'Hashable' is not currently supported on enums.",
+                message: "'@Hashable' is not currently supported on enums.",
                 severity: .error
             )
         }
