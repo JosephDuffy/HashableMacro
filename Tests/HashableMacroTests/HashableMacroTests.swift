@@ -498,7 +498,7 @@ final class HashableMacroTests: XCTestCase {
         #endif
     }
 
-    func testAddingHashedToUnsupportedDeclarations() {
+    func testAddingHashedToUnsupportedDeclarations() throws {
         #if canImport(HashableMacroMacros)
         assertMacro(testMacros) {
             """
@@ -551,7 +551,7 @@ final class HashableMacroTests: XCTestCase {
         #endif
     }
 
-    func testAddingNotHashedToUnsupportedDeclarations() {
+    func testAddingNotHashedToUnsupportedDeclarations() throws {
         #if canImport(HashableMacroMacros)
         assertMacro(testMacros) {
             """
