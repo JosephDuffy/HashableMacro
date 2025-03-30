@@ -13,11 +13,21 @@ concurrency:
 jobs:
   macos_tests:
     name: macOS Tests (SwiftPM, Xcode ${{ matrix.xcode }})
-    runs-on: "macos-14"
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        xcode: ["15.1", "15.3"]
+        include:
+          - os: "macos-14"
+            xcode: "15.1" # Same Swift version as 15.2
+          - os: "macos-14"
+            xcode: "15.3" # Same Swift version as 15.4
+          - os: "macos-15"
+            xcode: "16.0"
+          - os: "macos-15"
+            xcode: "16.1"
+          - os: "macos-15"
+            xcode: "16.2"
 
     steps:
       - uses: actions/checkout@v4
