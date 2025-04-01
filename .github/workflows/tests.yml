@@ -152,5 +152,10 @@ jobs:
       - name: Install Swift
         run: winget install --id Swift.Toolchain -e --accept-source-agreements --accept-package-agreements
 
+      # Normally the terminal would be restarted but we can't do that in GitHub actions, so we
+      # manually rebuild the path to allow `swift` to be accessible.
+      - name: Rebuild path
+        run: $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+
       - name: swift test
         run: swift test
