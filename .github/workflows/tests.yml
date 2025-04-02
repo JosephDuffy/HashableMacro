@@ -132,7 +132,7 @@ jobs:
       fail-fast: false
       matrix:
         os: ["ubuntu-latest"]
-        swift: ["5.9.2", "5.10"]
+        swift: ["5.9", "5.10", "6.0", "6.1"]
 
     steps:
       - uses: actions/checkout@v4
@@ -153,6 +153,18 @@ jobs:
   windows_tests:
     name: Windows Tests
     runs-on: windows-2025
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - branch: "swift-5.9.2-release"
+            tag: "5.9.2-RELEASE"
+          - branch: "swift-5.10.1-release"
+            tag: "5.10.1-RELEASE"
+          - branch: "swift-6.0.3-release"
+            tag: "6.0.3-RELEASE"
+          - branch: "swift-6.1-release"
+            tag: "6.1-RELEASE"
     steps:
       - uses: actions/checkout@v4
 
