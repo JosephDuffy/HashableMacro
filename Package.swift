@@ -19,14 +19,10 @@ let package = Package(
     ),
   ],
   dependencies: [
-    .package(
-      url: "https://github.com/apple/swift-syntax.git",
-      from: "509.1.0"
-    ),
-    .package(
-        url: "https://github.com/pointfreeco/swift-macro-testing.git",
-        branch: "main" // Needed to test diagnostics. 0.2.3 or higher should be ok.
-    ),
+    .package(url: "https://github.com/apple/swift-syntax", from: "509.1.0"),
+    // We only really need swift-macro-testing 0.3.0 or newer but 0.4.0 is required to compile due
+    // to breaking changes in swift-snapshot-testing.
+    .package(url: "https://github.com/pointfreeco/swift-macro-testing.git", from: "0.4.0"),
   ],
   targets: [
     .target(

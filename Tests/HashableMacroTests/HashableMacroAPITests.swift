@@ -36,6 +36,12 @@ private struct PrivateStruct {
 }
 
 @Hashable
+private struct StructWithReservedNames {
+    private let hasher = "hasher"
+    private let hash = 123
+}
+
+@Hashable
 struct HashableStructWithExplicitlyIncludedProperties {
     @Hashed
     let firstProperty: Int
