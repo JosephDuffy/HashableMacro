@@ -56,7 +56,16 @@ let package = Package(
         .product(name: "SwiftSyntaxMacros", package: "swift-syntax"),
         .product(name: "SwiftCompilerPlugin", package: "swift-syntax"),
       ],
-      swiftSettings: [.enableExperimentalFeature("StrictConcurrency")]
+      swiftSettings: [
+        .enableExperimentalFeature("StrictConcurrency"),
+        .unsafeFlags(
+            [
+                "-Xfrontend", "-entry-point-function-name",
+                "-Xfrontend", "wWinMain",
+            ],
+            .when(platforms: [.windows])
+        ),
+      ]
     ),
     .testTarget(
       name: "HashableMacroTests",
