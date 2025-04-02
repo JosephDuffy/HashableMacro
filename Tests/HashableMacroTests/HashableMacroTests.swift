@@ -289,6 +289,321 @@ final class HashableMacroTests: XCTestCase {
         #endif
     }
 
+    func testSkipStaticPropertiesOnStructs() throws {
+        #if canImport(HashableMacroMacros)
+        assertMacro(testMacros) {
+            """
+            @Hashable(_disableNSObjectSubclassSupport: true)
+            struct StructWithStaticProperties {
+                var hashableProperty: String
+                static var staticVar: String = "hello"
+                static let staticLet: String
+            }
+            """
+        } expansion: {
+            """
+            struct StructWithStaticProperties {
+                var hashableProperty: String
+                static var staticVar: String = "hello"
+                static let staticLet: String
+            }
+
+            extension StructWithStaticProperties {
+                func hash(into hasher: inout Hasher) {
+                    hasher.combine(self.hashableProperty)
+                }
+            }
+
+            extension StructWithStaticProperties {
+                static func ==(lhs: Self, rhs: Self) -> Bool {
+                    return lhs.hashableProperty == rhs.hashableProperty
+                }
+            }
+            """
+        }
+        #else
+        throw XCTSkip("Macros are only supported when running tests for the host platform")
+        #endif
+    }
+
+    func testAddingHashedMacroToStaticAndClassVariables() throws {
+        #if canImport(HashableMacroMacros)
+        assertMacro(testMacros) {
+            """
+            @Hashable(_disableNSObjectSubclassSupport: true)
+            class ClassWithStaticAndClassProperties {
+                @Hashed
+                var hashableProperty: String
+                @Hashed
+                static var staticVar: String = "hello"
+                @Hashed
+                static let staticLet: String = "world"
+                @Hashed
+                class var classVar: String = "hello"
+                @Hashed
+                class let classLet: String = "world"
+            }
+            """
+        } diagnostics: {
+            """
+            @Hashable(_disableNSObjectSubclassSupport: true)
+            class ClassWithStaticAndClassProperties {
+                @Hashed
+                var hashableProperty: String
+                @Hashed
+                ┬──────
+                ╰─ ⚠️ The @Hashed macro is only supported on instance properties.
+                   ✏️ Remove @Hashed
+                static var staticVar: String = "hello"
+                @Hashed
+                ┬──────
+                ╰─ ⚠️ The @Hashed macro is only supported on instance properties.
+                   ✏️ Remove @Hashed
+                static let staticLet: String = "world"
+                @Hashed
+                ┬──────
+                ╰─ ⚠️ The @Hashed macro is only supported on instance properties.
+                   ✏️ Remove @Hashed
+                class var classVar: String = "hello"
+                @Hashed
+                ┬──────
+                ╰─ ⚠️ The @Hashed macro is only supported on instance properties.
+                   ✏️ Remove @Hashed
+                class let classLet: String = "world"
+            }
+            """
+        } fixes: {
+            """
+            @Hashable(_disableNSObjectSubclassSupport: true)
+            class ClassWithStaticAndClassProperties {
+                @Hashed
+                var hashableProperty: String
+                static var staticVar: String = "hello"
+                static let staticLet: String = "world"
+                class var classVar: String = "hello"
+                class let classLet: String = "world"
+            }
+            """
+        } expansion: {
+            """
+            class ClassWithStaticAndClassProperties {
+                var hashableProperty: String
+                static var staticVar: String = "hello"
+                static let staticLet: String = "world"
+                class var classVar: String = "hello"
+                class let classLet: String = "world"
+            }
+            
+            extension ClassWithStaticAndClassProperties {
+                final func hash(into hasher: inout Hasher) {
+                    hasher.combine(self.hashableProperty)
+                }
+            }
+            
+            extension ClassWithStaticAndClassProperties {
+                static func ==(lhs: ClassWithStaticAndClassProperties, rhs: ClassWithStaticAndClassProperties) -> Bool {
+                    return lhs.hashableProperty == rhs.hashableProperty
+                }
+            }
+            """
+        }
+        #else
+        throw XCTSkip("Macros are only supported when running tests for the host platform")
+        #endif
+    }
+
+    func testAddingNotHashedMacroToStaticAndClassVariables() throws {
+        #if canImport(HashableMacroMacros)
+        assertMacro(testMacros) {
+            """
+            @Hashable(_disableNSObjectSubclassSupport: true)
+            class ClassWithStaticAndClassProperties {
+                @Hashed
+                var hashableProperty: String
+                @NotHashed
+                static var staticVar: String = "hello"
+                @NotHashed
+                static let staticLet: String = "world"
+                @NotHashed
+                class var classVar: String = "hello"
+                @NotHashed
+                class let classLet: String = "world"
+            }
+            """
+        } diagnostics: {
+            """
+            @Hashable(_disableNSObjectSubclassSupport: true)
+            class ClassWithStaticAndClassProperties {
+                @Hashed
+                var hashableProperty: String
+                @NotHashed
+                ┬─────────
+                ╰─ ⚠️ The @NotHashed macro is only supported on instance properties.
+                   ✏️ Remove @NotHashed
+                static var staticVar: String = "hello"
+                @NotHashed
+                ┬─────────
+                ╰─ ⚠️ The @NotHashed macro is only supported on instance properties.
+                   ✏️ Remove @NotHashed
+                static let staticLet: String = "world"
+                @NotHashed
+                ┬─────────
+                ╰─ ⚠️ The @NotHashed macro is only supported on instance properties.
+                   ✏️ Remove @NotHashed
+                class var classVar: String = "hello"
+                @NotHashed
+                ┬─────────
+                ╰─ ⚠️ The @NotHashed macro is only supported on instance properties.
+                   ✏️ Remove @NotHashed
+                class let classLet: String = "world"
+            }
+            """
+        } fixes: {
+            """
+            @Hashable(_disableNSObjectSubclassSupport: true)
+            class ClassWithStaticAndClassProperties {
+                @Hashed
+                var hashableProperty: String
+                static var staticVar: String = "hello"
+                static let staticLet: String = "world"
+                class var classVar: String = "hello"
+                class let classLet: String = "world"
+            }
+            """
+        } expansion: {
+            """
+            class ClassWithStaticAndClassProperties {
+                var hashableProperty: String
+                static var staticVar: String = "hello"
+                static let staticLet: String = "world"
+                class var classVar: String = "hello"
+                class let classLet: String = "world"
+            }
+            
+            extension ClassWithStaticAndClassProperties {
+                final func hash(into hasher: inout Hasher) {
+                    hasher.combine(self.hashableProperty)
+                }
+            }
+            
+            extension ClassWithStaticAndClassProperties {
+                static func ==(lhs: ClassWithStaticAndClassProperties, rhs: ClassWithStaticAndClassProperties) -> Bool {
+                    return lhs.hashableProperty == rhs.hashableProperty
+                }
+            }
+            """
+        }
+        #else
+        throw XCTSkip("Macros are only supported when running tests for the host platform")
+        #endif
+    }
+
+    func testAddingHashedToUnsupportedDeclarations() throws {
+        #if canImport(HashableMacroMacros)
+        assertMacro(testMacros) {
+            """
+            @Hashed
+            class ClassWithStaticAndClassProperties {
+                @Hashed
+                func testFunction() {}
+            }
+            
+            @Hashed
+            typealias MyString = String
+            """
+        } diagnostics: {
+            """
+            @Hashed
+            ┬──────
+            ╰─ ⚠️ The @Hashed macro is only supported on properties.
+               ✏️ Remove @Hashed
+            class ClassWithStaticAndClassProperties {
+                @Hashed
+                ┬──────
+                ╰─ ⚠️ The @Hashed macro is only supported on properties.
+                   ✏️ Remove @Hashed
+                func testFunction() {}
+            }
+
+            @Hashed
+            ┬──────
+            ╰─ ⚠️ The @Hashed macro is only supported on properties.
+               ✏️ Remove @Hashed
+            typealias MyString = String
+            """
+        } fixes: {
+            """
+            class ClassWithStaticAndClassProperties {
+                func testFunction() {}
+            }
+            typealias MyString = String
+            """
+        } expansion: {
+            """
+            class ClassWithStaticAndClassProperties {
+                func testFunction() {}
+            }
+            typealias MyString = String
+            """
+        }
+        #else
+        throw XCTSkip("Macros are only supported when running tests for the host platform")
+        #endif
+    }
+
+    func testAddingNotHashedToUnsupportedDeclarations() throws {
+        #if canImport(HashableMacroMacros)
+        assertMacro(testMacros) {
+            """
+            @NotHashed
+            class ClassWithStaticAndClassProperties {
+                @NotHashed
+                func testFunction() {}
+            }
+            
+            @NotHashed
+            typealias MyString = String
+            """
+        } diagnostics: {
+            """
+            @NotHashed
+            ┬─────────
+            ╰─ ⚠️ The @NotHashed macro is only supported on properties.
+               ✏️ Remove @NotHashed
+            class ClassWithStaticAndClassProperties {
+                @NotHashed
+                ┬─────────
+                ╰─ ⚠️ The @NotHashed macro is only supported on properties.
+                   ✏️ Remove @NotHashed
+                func testFunction() {}
+            }
+
+            @NotHashed
+            ┬─────────
+            ╰─ ⚠️ The @NotHashed macro is only supported on properties.
+               ✏️ Remove @NotHashed
+            typealias MyString = String
+            """
+        } fixes: {
+            """
+            class ClassWithStaticAndClassProperties {
+                func testFunction() {}
+            }
+            typealias MyString = String
+            """
+        } expansion: {
+            """
+            class ClassWithStaticAndClassProperties {
+                func testFunction() {}
+            }
+            typealias MyString = String
+            """
+        }
+        #else
+        throw XCTSkip("Macros are only supported when running tests for the host platform")
+        #endif
+    }
+
     func testPackageStruct() throws {
         #if canImport(HashableMacroMacros)
         assertMacro(testMacros) {
@@ -1137,7 +1452,7 @@ final class HashableMacroTests: XCTestCase {
             """
             @Hashable(_disableNSObjectSubclassSupport: true)
             ┬───────────────────────────────────────────────
-            ╰─ 🛑 'Hashable' is not currently supported on enums.
+            ╰─ 🛑 '@Hashable' is not currently supported on enums.
             enum TestEnum {
                 case testCase
             }
