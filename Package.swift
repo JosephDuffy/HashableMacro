@@ -60,8 +60,8 @@ let package = Package(
         .enableExperimentalFeature("StrictConcurrency"),
         .unsafeFlags(
             [
-                "-XFrontend", "-entry-point-function-name",
-                "-XFrontend", "wWinMain",
+                "-Xfrontend", "-entry-point-function-name",
+                "-Xfrontend", "wWinMain",
             ],
             .when(platforms: [.windows])
         ),
