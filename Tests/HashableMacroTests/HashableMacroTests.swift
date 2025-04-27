@@ -1023,6 +1023,17 @@ final class HashableMacroTests: XCTestCase {
         #endif
     }
 
+    // 日本語での説明:
+    // Swift 6.1とswift-syntax 600.0.xでは、ピアマクロ（@Hashedなど）は単一の変数宣言にのみ適用できるという制限があります。
+    // 以前のバージョンでは、一行に複数のプロパティを宣言する場合（例：`var hashedProperty, secondHashedProperty: String`）でも
+    // マクロが適用できましたが、Swift 6.1ではこれが不可能になりました。
+    // 
+    // このテストケースは元々、複数プロパティ宣言に対してマクロが正常に展開されることを期待していましたが、
+    // Swift 6.1の制限により、代わりに診断エラーを期待するように変更しました。
+    // 
+    // これはSwiftのマクロシステムの根本的な変更であり、私たちの実装で修正することはできません。
+    // テストの振る舞いを変更せざるを得なかったのはこのためです。
+
     func testStructWithAllExcludedProperties() throws {
         #if canImport(HashableMacroMacros)
         assertMacro(testMacros) {
