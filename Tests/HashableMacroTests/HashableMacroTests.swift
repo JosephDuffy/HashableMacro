@@ -225,25 +225,25 @@ final class HashableMacroTests: XCTestCase {
                 }
             }
 
-            extension InnerStruct {
+            extension Outer.InnerStruct {
                 func hash(into hasher: inout Hasher) {
                     hasher.combine(self.hashedProperty)
                 }
             }
 
-            extension InnerStruct {
+            extension Outer.InnerStruct {
                 static func ==(lhs: Self, rhs: Self) -> Bool {
                     return lhs.hashedProperty == rhs.hashedProperty
                 }
             }
 
-            extension InnerClass {
+            extension Outer.InnerClass {
                 final func hash(into hasher: inout Hasher) {
                     hasher.combine(self.hashedProperty)
                 }
             }
 
-            extension InnerClass {
+            extension Outer.InnerClass {
                 static func ==(lhs: Outer.InnerClass, rhs: Outer.InnerClass) -> Bool {
                     return lhs.hashedProperty == rhs.hashedProperty
                 }
@@ -393,13 +393,13 @@ final class HashableMacroTests: XCTestCase {
                 class var classVar: String = "hello"
                 class let classLet: String = "world"
             }
-            
+
             extension ClassWithStaticAndClassProperties {
                 final func hash(into hasher: inout Hasher) {
                     hasher.combine(self.hashableProperty)
                 }
             }
-            
+
             extension ClassWithStaticAndClassProperties {
                 static func ==(lhs: ClassWithStaticAndClassProperties, rhs: ClassWithStaticAndClassProperties) -> Bool {
                     return lhs.hashableProperty == rhs.hashableProperty
@@ -479,13 +479,13 @@ final class HashableMacroTests: XCTestCase {
                 class var classVar: String = "hello"
                 class let classLet: String = "world"
             }
-            
+
             extension ClassWithStaticAndClassProperties {
                 final func hash(into hasher: inout Hasher) {
                     hasher.combine(self.hashableProperty)
                 }
             }
-            
+
             extension ClassWithStaticAndClassProperties {
                 static func ==(lhs: ClassWithStaticAndClassProperties, rhs: ClassWithStaticAndClassProperties) -> Bool {
                     return lhs.hashableProperty == rhs.hashableProperty
@@ -507,7 +507,7 @@ final class HashableMacroTests: XCTestCase {
                 @Hashed
                 func testFunction() {}
             }
-            
+
             @Hashed
             typealias MyString = String
             """
@@ -560,7 +560,7 @@ final class HashableMacroTests: XCTestCase {
                 @NotHashed
                 func testFunction() {}
             }
-            
+
             @NotHashed
             typealias MyString = String
             """
@@ -1007,24 +1007,14 @@ final class HashableMacroTests: XCTestCase {
                 var hashedProperty, secondHashedProperty: String
             }
             """
-        } expansion: {
+        } diagnostics: {
             """
+            @Hashable(_disableNSObjectSubclassSupport: true)
             struct TestStruct {
+                @Hashed
+                ┬──────
+                ╰─ 🛑 peer macro can only be applied to a single variable
                 var hashedProperty, secondHashedProperty: String
-            }
-
-            extension TestStruct {
-                func hash(into hasher: inout Hasher) {
-                    hasher.combine(self.hashedProperty)
-                    hasher.combine(self.secondHashedProperty)
-                }
-            }
-
-            extension TestStruct {
-                static func ==(lhs: Self, rhs: Self) -> Bool {
-                    return lhs.hashedProperty == rhs.hashedProperty
-                        && lhs.secondHashedProperty == rhs.secondHashedProperty
-                }
             }
             """
         }
@@ -1032,6 +1022,17 @@ final class HashableMacroTests: XCTestCase {
         throw XCTSkip("Macros are only supported when running tests for the host platform")
         #endif
     }
+
+    // 日本語での説明:
+    // Swift 6.1とswift-syntax 600.0.xでは、ピアマクロ（@Hashedなど）は単一の変数宣言にのみ適用できるという制限があります。
+    // 以前のバージョンでは、一行に複数のプロパティを宣言する場合（例：`var hashedProperty, secondHashedProperty: String`）でも
+    // マクロが適用できましたが、Swift 6.1ではこれが不可能になりました。
+    // 
+    // このテストケースは元々、複数プロパティ宣言に対してマクロが正常に展開されることを期待していましたが、
+    // Swift 6.1の制限により、代わりに診断エラーを期待するように変更しました。
+    // 
+    // これはSwiftのマクロシステムの根本的な変更であり、私たちの実装で修正することはできません。
+    // テストの振る舞いを変更せざるを得なかったのはこのためです。
 
     func testStructWithAllExcludedProperties() throws {
         #if canImport(HashableMacroMacros)
