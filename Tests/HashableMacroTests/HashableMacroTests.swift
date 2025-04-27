@@ -225,25 +225,25 @@ final class HashableMacroTests: XCTestCase {
                 }
             }
 
-            extension InnerStruct {
+            extension Outer.InnerStruct {
                 func hash(into hasher: inout Hasher) {
                     hasher.combine(self.hashedProperty)
                 }
             }
 
-            extension InnerStruct {
+            extension Outer.InnerStruct {
                 static func ==(lhs: Self, rhs: Self) -> Bool {
                     return lhs.hashedProperty == rhs.hashedProperty
                 }
             }
 
-            extension InnerClass {
+            extension Outer.InnerClass {
                 final func hash(into hasher: inout Hasher) {
                     hasher.combine(self.hashedProperty)
                 }
             }
 
-            extension InnerClass {
+            extension Outer.InnerClass {
                 static func ==(lhs: Outer.InnerClass, rhs: Outer.InnerClass) -> Bool {
                     return lhs.hashedProperty == rhs.hashedProperty
                 }
@@ -393,13 +393,13 @@ final class HashableMacroTests: XCTestCase {
                 class var classVar: String = "hello"
                 class let classLet: String = "world"
             }
-            
+
             extension ClassWithStaticAndClassProperties {
                 final func hash(into hasher: inout Hasher) {
                     hasher.combine(self.hashableProperty)
                 }
             }
-            
+
             extension ClassWithStaticAndClassProperties {
                 static func ==(lhs: ClassWithStaticAndClassProperties, rhs: ClassWithStaticAndClassProperties) -> Bool {
                     return lhs.hashableProperty == rhs.hashableProperty
@@ -479,13 +479,13 @@ final class HashableMacroTests: XCTestCase {
                 class var classVar: String = "hello"
                 class let classLet: String = "world"
             }
-            
+
             extension ClassWithStaticAndClassProperties {
                 final func hash(into hasher: inout Hasher) {
                     hasher.combine(self.hashableProperty)
                 }
             }
-            
+
             extension ClassWithStaticAndClassProperties {
                 static func ==(lhs: ClassWithStaticAndClassProperties, rhs: ClassWithStaticAndClassProperties) -> Bool {
                     return lhs.hashableProperty == rhs.hashableProperty
@@ -507,7 +507,7 @@ final class HashableMacroTests: XCTestCase {
                 @Hashed
                 func testFunction() {}
             }
-            
+
             @Hashed
             typealias MyString = String
             """
@@ -560,7 +560,7 @@ final class HashableMacroTests: XCTestCase {
                 @NotHashed
                 func testFunction() {}
             }
-            
+
             @NotHashed
             typealias MyString = String
             """
@@ -1007,24 +1007,14 @@ final class HashableMacroTests: XCTestCase {
                 var hashedProperty, secondHashedProperty: String
             }
             """
-        } expansion: {
+        } diagnostics: {
             """
+            @Hashable(_disableNSObjectSubclassSupport: true)
             struct TestStruct {
+                @Hashed
+                ┬──────
+                ╰─ 🛑 peer macro can only be applied to a single variable
                 var hashedProperty, secondHashedProperty: String
-            }
-
-            extension TestStruct {
-                func hash(into hasher: inout Hasher) {
-                    hasher.combine(self.hashedProperty)
-                    hasher.combine(self.secondHashedProperty)
-                }
-            }
-
-            extension TestStruct {
-                static func ==(lhs: Self, rhs: Self) -> Bool {
-                    return lhs.hashedProperty == rhs.hashedProperty
-                        && lhs.secondHashedProperty == rhs.secondHashedProperty
-                }
             }
             """
         }

@@ -1,4 +1,4 @@
-// swift-tools-version: 5.9
+// swift-tools-version: 6.1
 import CompilerPluginSupport
 import PackageDescription
 
@@ -19,10 +19,9 @@ let package = Package(
     ),
   ],
   dependencies: [
-    .package(url: "https://github.com/apple/swift-syntax", from: "509.1.0"),
-    // We only really need swift-macro-testing 0.3.0 or newer but 0.4.0 is required to compile due
-    // to breaking changes in swift-snapshot-testing.
-    .package(url: "https://github.com/pointfreeco/swift-macro-testing.git", from: "0.4.0"),
+    .package(url: "https://github.com/apple/swift-syntax", from: "600.0.0"),
+    // We need swift-macro-testing 0.6.0 or newer for compatibility with Swift 6.1 and swift-syntax 600.0.x
+    .package(url: "https://github.com/pointfreeco/swift-macro-testing.git", from: "0.6.0"),
   ],
   targets: [
     .target(
