@@ -19,7 +19,7 @@ let package = Package(
     ),
   ],
   dependencies: [
-    .package(url: "https://github.com/apple/swift-syntax", from: "600.0.0"),
+    .package(url: "https://github.com/swiftlang/swift-syntax", from: "600.0.0"),
     // We need swift-macro-testing 0.6.0 or newer for compatibility with Swift 6.1 and swift-syntax 600.0.x
     .package(url: "https://github.com/pointfreeco/swift-macro-testing.git", from: "0.6.0"),
   ],
