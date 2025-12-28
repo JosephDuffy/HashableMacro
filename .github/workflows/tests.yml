@@ -19,15 +19,15 @@ jobs:
       matrix:
         include:
           - os: "macos-14"
-            xcode: "15.1" # Same Swift version as 15.2
+            xcode: "15.1" # Swift 5.9. Same as 15.2.
           - os: "macos-14"
-            xcode: "15.3" # Same Swift version as 15.4
+            xcode: "15.3" # Swift 5.10. Same as 15.4.
           - os: "macos-15"
-            xcode: "16.0"
+            xcode: "16.0" # Swift 6.0. Same as 16.1 and 16.2.
           - os: "macos-15"
-            xcode: "16.1"
-          - os: "macos-15"
-            xcode: "16.2"
+            xcode: "16.3" # Swift 6.1. Same as 16.4.
+          - os: "macos-26"
+            xcode: "26.0.1" # Swift 6.2. Same as 26.1.
 
     steps:
       - uses: actions/checkout@v4
@@ -69,8 +69,18 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        xcode: ["15.1", "15.3"]
         platform: ["macOS", "iOS", "tvOS", "watchOS", "macCatalyst", "visionOS"]
+        include:
+          - os: "macos-14"
+            xcode: "15.1" # Swift 5.9. Same as 15.2.
+          - os: "macos-14"
+            xcode: "15.3" # Swift 5.10. Same as 15.4.
+          - os: "macos-15"
+            xcode: "16.0" # Swift 6.0. Same as 16.1 and 16.2.
+          - os: "macos-15"
+            xcode: "16.3" # Swift 6.1. Same as 16.4.
+          - os: "macos-26"
+            xcode: "26.0.1" # Swift 6.2. Same as 26.1.
         exclude:
           # There are no visionOS simulators available on GitHub Actions using Xcode 15.1
           - xcode: "15.1"
@@ -132,7 +142,7 @@ jobs:
       fail-fast: false
       matrix:
         os: ["ubuntu-latest"]
-        swift: ["5.9.2", "5.10"]
+        swift: ["5.9.2", "5.10", "6.0", "6.1", "6.2"]
 
     steps:
       - uses: actions/checkout@v4
