@@ -63,29 +63,27 @@ jobs:
           files: ${{ join(fromJSON(steps.convert-coverage.outputs.files), ',') }}
           fail_ci_if_error: true
 
+  generate_xcode_tests_matrix:
+    name: Generate Xcode Tests Matrix
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - name: Set up matrix
+        id: set-matrix
+        run: |
+          matrix="$(./.github/scripts/generate-xcode-tests-matrix.sh)"
+          echo "${matrix}"
+          echo "matrix=${matrix}" >> "${GITHUB_OUTPUT}"
+
   xcode_tests:
     name: ${{ matrix.platform }} Tests (Xcode ${{ matrix.xcode }})
-    runs-on: macos-14
+    needs:
+      - generate_xcode_tests_matrix
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
-      matrix:
-        xcode: []
-        platform: ["macOS", "iOS", "tvOS", "watchOS", "macCatalyst", "visionOS"]
-        include:
-          - os: "macos-14"
-            xcode: "15.1" # Swift 5.9. Same as 15.2.
-          - os: "macos-14"
-            xcode: "15.3" # Swift 5.10. Same as 15.4.
-          - os: "macos-15"
-            xcode: "16.0" # Swift 6.0. Same as 16.1 and 16.2.
-          - os: "macos-15"
-            xcode: "16.3" # Swift 6.1. Same as 16.4.
-          - os: "macos-26"
-            xcode: "26.0.1" # Swift 6.2. Same as 26.1.
-        exclude:
-          # There are no visionOS simulators available on GitHub Actions using Xcode 15.1
-          - xcode: "15.1"
-            platform: "visionOS"
+      matrix: ${{ fromJson(needs.generate_xcode_tests_matrix.outputs.matrix) }}
 
     steps:
       - uses: actions/checkout@v4
