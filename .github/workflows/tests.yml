@@ -69,6 +69,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        xcode: []
         platform: ["macOS", "iOS", "tvOS", "watchOS", "macCatalyst", "visionOS"]
         include:
           - os: "macos-14"
