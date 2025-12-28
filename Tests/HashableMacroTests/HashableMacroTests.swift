@@ -6,16 +6,18 @@ import XCTest
 #if canImport(HashableMacroMacros)
 @testable import HashableMacroMacros
 
-private let testMacros: [String: Macro.Type] = Dictionary(
-    uniqueKeysWithValues: HashableMacroPlugin()
-        .providingMacros
-        .map { macroType in
-            (
-                String(String(describing: macroType).dropLast("Macro".count)),
-                macroType
-            )
-        }
+private var testMacros: [String: Macro.Type] {
+    Dictionary(
+        uniqueKeysWithValues: HashableMacroPlugin()
+            .providingMacros
+            .map { macroType in
+                (
+                    String(String(describing: macroType).dropLast("Macro".count)),
+                    macroType
+                )
+            }
     )
+}
 #endif
 
 final class HashableMacroTests: XCTestCase {
@@ -393,13 +395,13 @@ final class HashableMacroTests: XCTestCase {
                 class var classVar: String = "hello"
                 class let classLet: String = "world"
             }
-            
+
             extension ClassWithStaticAndClassProperties {
                 final func hash(into hasher: inout Hasher) {
                     hasher.combine(self.hashableProperty)
                 }
             }
-            
+
             extension ClassWithStaticAndClassProperties {
                 static func ==(lhs: ClassWithStaticAndClassProperties, rhs: ClassWithStaticAndClassProperties) -> Bool {
                     return lhs.hashableProperty == rhs.hashableProperty
@@ -479,13 +481,13 @@ final class HashableMacroTests: XCTestCase {
                 class var classVar: String = "hello"
                 class let classLet: String = "world"
             }
-            
+
             extension ClassWithStaticAndClassProperties {
                 final func hash(into hasher: inout Hasher) {
                     hasher.combine(self.hashableProperty)
                 }
             }
-            
+
             extension ClassWithStaticAndClassProperties {
                 static func ==(lhs: ClassWithStaticAndClassProperties, rhs: ClassWithStaticAndClassProperties) -> Bool {
                     return lhs.hashableProperty == rhs.hashableProperty
@@ -507,7 +509,7 @@ final class HashableMacroTests: XCTestCase {
                 @Hashed
                 func testFunction() {}
             }
-            
+
             @Hashed
             typealias MyString = String
             """
@@ -560,7 +562,7 @@ final class HashableMacroTests: XCTestCase {
                 @NotHashed
                 func testFunction() {}
             }
-            
+
             @NotHashed
             typealias MyString = String
             """
@@ -1659,6 +1661,7 @@ final class HashableMacroTests: XCTestCase {
         #else
         throw XCTSkip("This expansion requires Objective-C")
         #endif
+        #else
         throw XCTSkip("Macros are only supported when running tests for the host platform")
         #endif
     }
@@ -1749,6 +1752,7 @@ final class HashableMacroTests: XCTestCase {
         #else
         throw XCTSkip("This expansion requires Objective-C")
         #endif
+        #else
         throw XCTSkip("Macros are only supported when running tests for the host platform")
         #endif
     }
