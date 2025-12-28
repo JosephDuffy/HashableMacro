@@ -35,6 +35,19 @@ jobs:
       - name: Select Xcode ${{ matrix.xcode }}
         run: sudo xcode-select --switch /Applications/Xcode_${{ matrix.xcode }}.app
 
+      - name: Install Mint
+        run: brew install mint
+
+      - name: Cache Mint
+        uses: actions/cache@v3
+        with:
+          path: ~/.mint
+          key: ${{ runner.os }}-mint-xcode_${{ matrix.xcode }}-${{ hashFiles('**/Mintfile') }}
+          restore-keys: |
+            ${{ runner.os }}-mint-xcode_${{ matrix.xcode }}
+
+      - run: mint bootstrap
+
       - name: Cache SwiftPM
         uses: actions/cache@v3
         with:
@@ -46,7 +59,7 @@ jobs:
             ${{ runner.os }}-xcode_${{ matrix.xcode }}-swiftpm-
 
       - name: SwiftPM tests
-        run: swift test --enable-code-coverage
+        run: swift test --enable-code-coverage | $(mint which xcbeautify --renderer github-actions)
 
       - name: Convert coverage for Codecov
         id: convert-coverage
@@ -118,7 +131,7 @@ jobs:
       - name: Run Tests
         run: |
           set -o pipefail
-          mint run xcutils test ${{ matrix.platform }} --scheme HashableMacro --enable-code-coverage | $(mint which xcbeautify)
+          mint run xcutils test ${{ matrix.platform }} --scheme HashableMacro --enable-code-coverage | $(mint which xcbeautify --renderer github-actions)
 
       - name: Convert coverage for Codecov
         id: convert-coverage
@@ -159,4 +172,4 @@ jobs:
             ${{ runner.os }}-swift_${{ matrix.swift }}-swiftpm-deps-
 
       - name: swift test
-        run: swift test
+        run: swift test  | $(mint which xcbeautify --renderer github-actions)
