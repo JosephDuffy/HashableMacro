@@ -13,6 +13,7 @@ includes='[
 ]'
 
 jq --null-input \
+  --compact-output \
   --argjson platforms "$platforms" \
   --argjson includes "$includes" \
   '
