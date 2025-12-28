@@ -59,7 +59,7 @@ jobs:
             ${{ runner.os }}-xcode_${{ matrix.xcode }}-swiftpm-
 
       - name: SwiftPM tests
-        run: swift test --enable-code-coverage | $(mint which xcbeautify --renderer github-actions)
+        run: swift test --enable-code-coverage | $(mint which xcbeautify -- --renderer github-actions)
 
       - name: Convert coverage for Codecov
         id: convert-coverage
@@ -131,7 +131,7 @@ jobs:
       - name: Run Tests
         run: |
           set -o pipefail
-          mint run xcutils test ${{ matrix.platform }} --scheme HashableMacro --enable-code-coverage | $(mint which xcbeautify --renderer github-actions)
+          mint run xcutils test ${{ matrix.platform }} --scheme HashableMacro --enable-code-coverage | $(mint which xcbeautify -- --renderer github-actions)
 
       - name: Convert coverage for Codecov
         id: convert-coverage
