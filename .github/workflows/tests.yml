@@ -72,7 +72,7 @@ jobs:
       - name: Set up matrix
         id: set-matrix
         run: |
-          matrix="$(./.github/scripts/generate-xcode-tests-matrix.sh)"
+          matrix="$(./.github/generate-xcode-tests-matrix.sh)"
           echo "${matrix}"
           echo "matrix=${matrix}" >> "${GITHUB_OUTPUT}"
 
