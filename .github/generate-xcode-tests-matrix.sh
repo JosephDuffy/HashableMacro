@@ -28,7 +28,11 @@ jq --null-input \
               os: $inc.os,
               xcode: $inc.xcode
             }
-          | select(.platform != "visionOS" or .xcode != "15.1")
+          # No simualators on the GitHub runners for Xcode 16.0
+          | select(.platform != "iOS" or .xcode != "16.0")
+          | select(.platform != "tvOS" or .xcode != "16.0")
+          | select(.platform != "watchOS" or .xcode != "16.0")
+          | select(.platform != "visionOS" or .xcode != "16.0")
         ]
       )
     )
