@@ -69,6 +69,8 @@ jobs:
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
+      - uses: actions/checkout@v4
+
       - name: Set up matrix
         id: set-matrix
         run: |
