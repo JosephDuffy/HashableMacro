@@ -18,7 +18,7 @@ jq --null-input \
   --argjson includes "$includes" \
   '
   {
-    include:
+    include: (
       reduce $includes[] as $inc (
         [];
         . + [
@@ -31,5 +31,6 @@ jq --null-input \
           | select(.platform != "visionOS" or .xcode != "15.1")
         ]
       )
+    )
   }
   '
