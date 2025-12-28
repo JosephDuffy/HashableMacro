@@ -172,4 +172,4 @@ jobs:
             ${{ runner.os }}-swift_${{ matrix.swift }}-swiftpm-deps-
 
       - name: swift test
-        run: swift test  | $(mint which xcbeautify --renderer github-actions)
+        run: swift test
