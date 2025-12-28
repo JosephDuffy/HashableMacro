@@ -395,13 +395,13 @@ final class HashableMacroTests: XCTestCase {
                 class var classVar: String = "hello"
                 class let classLet: String = "world"
             }
-            
+
             extension ClassWithStaticAndClassProperties {
                 final func hash(into hasher: inout Hasher) {
                     hasher.combine(self.hashableProperty)
                 }
             }
-            
+
             extension ClassWithStaticAndClassProperties {
                 static func ==(lhs: ClassWithStaticAndClassProperties, rhs: ClassWithStaticAndClassProperties) -> Bool {
                     return lhs.hashableProperty == rhs.hashableProperty
@@ -481,13 +481,13 @@ final class HashableMacroTests: XCTestCase {
                 class var classVar: String = "hello"
                 class let classLet: String = "world"
             }
-            
+
             extension ClassWithStaticAndClassProperties {
                 final func hash(into hasher: inout Hasher) {
                     hasher.combine(self.hashableProperty)
                 }
             }
-            
+
             extension ClassWithStaticAndClassProperties {
                 static func ==(lhs: ClassWithStaticAndClassProperties, rhs: ClassWithStaticAndClassProperties) -> Bool {
                     return lhs.hashableProperty == rhs.hashableProperty
@@ -509,7 +509,7 @@ final class HashableMacroTests: XCTestCase {
                 @Hashed
                 func testFunction() {}
             }
-            
+
             @Hashed
             typealias MyString = String
             """
@@ -562,7 +562,7 @@ final class HashableMacroTests: XCTestCase {
                 @NotHashed
                 func testFunction() {}
             }
-            
+
             @NotHashed
             typealias MyString = String
             """
