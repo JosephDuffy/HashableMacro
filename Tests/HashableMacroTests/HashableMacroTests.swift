@@ -6,16 +6,18 @@ import XCTest
 #if canImport(HashableMacroMacros)
 @testable import HashableMacroMacros
 
-private let testMacros: [String: Macro.Type] = Dictionary(
-    uniqueKeysWithValues: HashableMacroPlugin()
-        .providingMacros
-        .map { macroType in
-            (
-                String(String(describing: macroType).dropLast("Macro".count)),
-                macroType
-            )
-        }
+private var testMacros: [String: Macro.Type] {
+    Dictionary(
+        uniqueKeysWithValues: HashableMacroPlugin()
+            .providingMacros
+            .map { macroType in
+                (
+                    String(String(describing: macroType).dropLast("Macro".count)),
+                    macroType
+                )
+            }
     )
+}
 #endif
 
 final class HashableMacroTests: XCTestCase {
