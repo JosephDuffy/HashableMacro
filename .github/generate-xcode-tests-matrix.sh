@@ -1,4 +1,5 @@
-#!/bin/sh
+#!/usr/bin/env sh
+
 set -e
 
 platforms='["macOS","iOS","tvOS","watchOS","macCatalyst","visionOS"]'
