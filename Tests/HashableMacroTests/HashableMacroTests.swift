@@ -1661,6 +1661,7 @@ final class HashableMacroTests: XCTestCase {
         #else
         throw XCTSkip("This expansion requires Objective-C")
         #endif
+        #else
         throw XCTSkip("Macros are only supported when running tests for the host platform")
         #endif
     }
@@ -1751,6 +1752,7 @@ final class HashableMacroTests: XCTestCase {
         #else
         throw XCTSkip("This expansion requires Objective-C")
         #endif
+        #else
         throw XCTSkip("Macros are only supported when running tests for the host platform")
         #endif
     }
