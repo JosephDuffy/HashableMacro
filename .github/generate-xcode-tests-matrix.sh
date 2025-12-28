@@ -17,16 +17,19 @@ jq --null-input \
   --argjson platforms "$platforms" \
   --argjson includes "$includes" \
   '
-  reduce $includes[] as $inc (
-    [];
-    . + [
-      $platforms[]
-      | {
-          platform: .,
-          os: $inc.os,
-          xcode: $inc.xcode
-        }
-      | select(.platform != "visionOS" or .xcode != "15.1")
-    ]
-  )
+  {
+    include:
+      reduce $includes[] as $inc (
+        [];
+        . + [
+          $platforms[]
+          | {
+              platform: .,
+              os: $inc.os,
+              xcode: $inc.xcode
+            }
+          | select(.platform != "visionOS" or .xcode != "15.1")
+        ]
+      )
+  }
   '
