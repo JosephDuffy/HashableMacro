@@ -1,4 +1,4 @@
-// swift-tools-version: 6.0
+// swift-tools-version: 5.9
 import CompilerPluginSupport
 import PackageDescription
 
@@ -56,16 +56,7 @@ let package = Package(
         .product(name: "SwiftSyntaxMacros", package: "swift-syntax"),
         .product(name: "SwiftCompilerPlugin", package: "swift-syntax"),
       ],
-      swiftSettings: [
-        .enableExperimentalFeature("StrictConcurrency"),
-        .unsafeFlags(
-            [
-                "-Xfrontend", "-entry-point-function-name",
-                "-Xfrontend", "wWinMain",
-            ],
-            .when(platforms: [.windows])
-        ),
-      ]
+      swiftSettings: [.enableExperimentalFeature("StrictConcurrency")]
     ),
     .testTarget(
       name: "HashableMacroTests",
