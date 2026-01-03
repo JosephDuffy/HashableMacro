@@ -65,7 +65,7 @@ jobs:
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
-        if: ${{ github.event.action != 'pull_request_target' }}
+        if: ${{ github.event_name != 'pull_request_target' }}
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         with:
@@ -176,7 +176,7 @@ jobs:
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
-        if: ${{ github.event.action != 'pull_request_target' }}
+        if: ${{ github.event_name != 'pull_request_target' }}
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         with:
