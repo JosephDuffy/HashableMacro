@@ -76,6 +76,49 @@ jobs:
           files: ${{ join(fromJSON(steps.convert-coverage.outputs.files), ',') }}
           fail_ci_if_error: true
 
+  generate_swift_syntax_version:
+    name: Generate Swift Syntax Versions
+    runs-on: macOS-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - run: brew install mint
+
+      - name: Cache Mint
+        uses: actions/cache@v3
+        with:
+          path: ~/.mint
+          key: ${{ runner.os }}-mint-xcode_${{ matrix.xcode }}-${{ hashFiles('**/Mintfile') }}
+          restore-keys: |
+            ${{ runner.os }}-mint-xcode_${{ matrix.xcode }}
+
+      - run: mint bootstrap
+
+      - name: Set up matrix
+        id: set-matrix
+        run: |
+          matrix="$(mint run josephduffy/swift-dependency-compatibility-checker swift-syntax --resolve-only --github-actions-matrix)"
+          echo "${matrix}"
+          echo "matrix=${matrix}" >> "${GITHUB_OUTPUT}"
+
+  test_swift_syntax_versions:
+    name: Swift Syntax ${{ matrix.version }} Tests
+    needs:
+      - generate_swift_syntax_version
+    runs-on: macOS-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.generate_swift_syntax_version.outputs.matrix) }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - run: swift package resolve swift-syntax --version ${{ matrix.version }}
+
+      - run: swift test | mint run xcbeautify --renderer github-actions
+
   generate_xcode_tests_matrix:
     name: Generate Xcode Tests Matrix
     runs-on: ubuntu-latest
