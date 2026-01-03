@@ -73,7 +73,7 @@ jobs:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         with:
           files: ${{ join(fromJSON(steps.convert-coverage.outputs.files), ',') }}
-          fail_ci_if_error: true
+          fail_ci_if_error: ${{ github.event.action != 'pull_request_target' }}
 
   generate_swift_syntax_version:
     name: Generate Swift Syntax Versions
@@ -187,7 +187,7 @@ jobs:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         with:
           files: ${{ join(fromJSON(steps.convert-coverage.outputs.files), ',') }}
-          fail_ci_if_error: true
+          fail_ci_if_error: ${{ github.event.action != 'pull_request_target' }}
 
   linux_tests:
     name: Swift ${{ matrix.swift }} on ${{ matrix.os }}
