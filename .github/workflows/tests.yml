@@ -89,16 +89,12 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ~/.mint
-          key: ${{ runner.os }}-mint-xcode_${{ matrix.xcode }}-${{ hashFiles('**/Mintfile') }}
-          restore-keys: |
-            ${{ runner.os }}-mint-xcode_${{ matrix.xcode }}
-
-      - run: mint bootstrap
+          key: ${{ runner.os }}-mint-swift-dependency-compatibility-checker
 
       - name: Set up matrix
         id: set-matrix
         run: |
-          matrix="$(mint run josephduffy/swift-dependency-compatibility-checker swift-syntax --resolve-only --github-actions-matrix)"
+          matrix="$(mint run josephduffy/swift-dependency-compatibility-checker@main swift-syntax --resolve-only --github-actions-matrix)"
           echo "${matrix}"
           echo "matrix=${matrix}" >> "${GITHUB_OUTPUT}"
 
