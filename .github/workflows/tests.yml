@@ -91,7 +91,7 @@ jobs:
       - name: Set up matrix
         id: set-matrix
         run: |
-          matrix="$(mint run josephduffy/swift-dependency-compatibility-checker@main swift-syntax --resolve-only --github-actions-matrix)"
+          matrix="$(mint run --silent josephduffy/swift-dependency-compatibility-checker@main swift-syntax --resolve-only --github-actions-matrix)"
           echo "${matrix}"
           echo "matrix=${matrix}" >> "${GITHUB_OUTPUT}"
 
