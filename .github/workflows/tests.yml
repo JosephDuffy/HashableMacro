@@ -69,11 +69,12 @@ jobs:
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
+        if: ${{ github.event.action != 'pull_request_target' }}
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         with:
           files: ${{ join(fromJSON(steps.convert-coverage.outputs.files), ',') }}
-          fail_ci_if_error: ${{ github.event.action != 'pull_request_target' }}
+          fail_ci_if_error: true
 
   generate_swift_syntax_version:
     name: Generate Swift Syntax Versions
@@ -179,11 +180,12 @@ jobs:
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
+        if: ${{ github.event.action != 'pull_request_target' }}
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         with:
           files: ${{ join(fromJSON(steps.convert-coverage.outputs.files), ',') }}
-          fail_ci_if_error: ${{ github.event.action != 'pull_request_target' }}
+          fail_ci_if_error: true
 
   linux_tests:
     name: Swift ${{ matrix.swift }} on ${{ matrix.os }}
