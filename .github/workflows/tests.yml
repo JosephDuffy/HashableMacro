@@ -37,9 +37,9 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ~/.mint
-          key: ${{ runner.os }}-mint-xcode_${{ matrix.xcode }}-${{ hashFiles('**/Mintfile') }}
+          key: ${{ runner.os }}-${{ matrix.os }}-mint-xcode_${{ matrix.xcode }}-${{ hashFiles('**/Mintfile') }}
           restore-keys: |
-            ${{ runner.os }}-mint-xcode_${{ matrix.xcode }}
+            ${{ runner.os }}-${{ matrix.os }}-mint-xcode_${{ matrix.xcode }}
 
       - run: mint bootstrap
 
@@ -47,11 +47,11 @@ jobs:
         uses: actions/cache@v3
         with:
           path: .build
-          key: ${{ runner.os }}-xcode_${{ matrix.xcode }}-swiftpm-${{ github.ref }}-${{ hashFiles('**/Package.resolved') }}
+          key: ${{ runner.os }}-${{ matrix.os }}-xcode_${{ matrix.xcode }}-swiftpm-${{ github.ref }}-${{ hashFiles('**/Package.resolved') }}
           restore-keys: |
-            ${{ runner.os }}-xcode_${{ matrix.xcode }}-swiftpm-${{ github.ref }}-
-            ${{ runner.os }}-xcode_${{ matrix.xcode }}-swiftpm-main-
-            ${{ runner.os }}-xcode_${{ matrix.xcode }}-swiftpm-
+            ${{ runner.os }}-${{ matrix.os }}-xcode_${{ matrix.xcode }}-swiftpm-${{ github.ref }}-
+            ${{ runner.os }}-${{ matrix.os }}-xcode_${{ matrix.xcode }}-swiftpm-main-
+            ${{ runner.os }}-${{ matrix.os }}-xcode_${{ matrix.xcode }}-swiftpm-
 
       - name: SwiftPM tests
         run: swift test --enable-code-coverage | mint run xcbeautify --renderer github-actions
@@ -73,7 +73,7 @@ jobs:
 
   generate_swift_syntax_version:
     name: Generate Swift Syntax Versions
-    runs-on: macOS-latest
+    runs-on: macos-26
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
@@ -85,7 +85,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ~/.mint
-          key: ${{ runner.os }}-mint-swift-dependency-compatibility-checker
+          key: macOS-macos-26-mint-swift-dependency-compatibility-checker
 
       - name: Set up matrix
         id: set-matrix
@@ -98,7 +98,7 @@ jobs:
     name: Swift Syntax ${{ matrix.version }} Tests
     needs:
       - generate_swift_syntax_version
-    runs-on: macOS-latest
+    runs-on: macos-26
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.generate_swift_syntax_version.outputs.matrix) }}
@@ -116,9 +116,9 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ~/.mint
-          key: ${{ runner.os }}-mint-xcode_26.0.1-${{ hashFiles('**/Mintfile') }}
+          key: macOS-macos-26-mint-xcode_26.0.1-${{ hashFiles('**/Mintfile') }}
           restore-keys: |
-            ${{ runner.os }}-mint-xcode_26.0.1
+            macOS-macos-26-mint-xcode_26.0.1
 
       - run: mint bootstrap
 
@@ -165,9 +165,9 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ~/.mint
-          key: ${{ runner.os }}-mint-xcode_${{ matrix.xcode }}-${{ hashFiles('**/Mintfile') }}
+          key: ${{ runner.os }}-${{ matrix.os }}-mint-xcode_${{ matrix.xcode }}-${{ hashFiles('**/Mintfile') }}
           restore-keys: |
-            ${{ runner.os }}-mint-xcode_${{ matrix.xcode }}
+            ${{ runner.os }}-${{ matrix.os }}-mint-xcode_${{ matrix.xcode }}
 
       - run: mint bootstrap
 
@@ -175,10 +175,10 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ~/Library/Developer/Xcode/DerivedData
-          key: ${{ runner.os }}-xcode_${{ matrix.xcode }}-derived_data-${{ github.ref }}
+          key: ${{ runner.os }}-${{ matrix.os }}-xcode_${{ matrix.xcode }}-derived_data-${{ github.ref }}
           restore-keys: |
-            ${{ runner.os }}-xcode_${{ matrix.xcode }}-derived_data-main
-            ${{ runner.os }}-xcode_${{ matrix.xcode }}-derived_data-
+            ${{ runner.os }}-${{ matrix.os }}-xcode_${{ matrix.xcode }}-derived_data-main
+            ${{ runner.os }}-${{ matrix.os }}-xcode_${{ matrix.xcode }}-derived_data-
 
       - name: Run Tests
         run: |
