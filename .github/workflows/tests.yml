@@ -106,6 +106,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Select Xcode 26.0.1
+        run: sudo xcode-select --switch /Applications/Xcode_26.0.1.app
+
+      - name: Install Mint
+        run: brew install mint
+
+      - name: Cache Mint
+        uses: actions/cache@v3
+        with:
+          path: ~/.mint
+          key: ${{ runner.os }}-mint-xcode_26.0.1-${{ hashFiles('**/Mintfile') }}
+          restore-keys: |
+            ${{ runner.os }}-mint-xcode_26.0.1
+
+      - run: mint bootstrap
+
       - run: swift package resolve
 
       - run: swift package resolve swift-syntax --version ${{ matrix.version }}
