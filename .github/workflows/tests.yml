@@ -64,12 +64,11 @@ jobs:
           fail-on-empty-output: true
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
-        if: ${{ github.event_name != 'pull_request_target' }}
+        uses: codecov/codecov-action@v5
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         with:
-          files: ${{ join(fromJSON(steps.convert-coverage.outputs.files), ',') }}
+          file: ${{ join(fromJSON(steps.convert-coverage.outputs.files), ',') }}
           fail_ci_if_error: true
 
   generate_swift_syntax_version:
@@ -106,6 +105,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - run: swift package resolve
 
       - run: swift package resolve swift-syntax --version ${{ matrix.version }}
 
@@ -175,12 +176,11 @@ jobs:
           fail-on-empty-output: true
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
-        if: ${{ github.event_name != 'pull_request_target' }}
+        uses: codecov/codecov-action@v5
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         with:
-          files: ${{ join(fromJSON(steps.convert-coverage.outputs.files), ',') }}
+          file: ${{ join(fromJSON(steps.convert-coverage.outputs.files), ',') }}
           fail_ci_if_error: true
 
   linux_tests:
