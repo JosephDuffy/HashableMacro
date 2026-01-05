@@ -54,7 +54,9 @@ jobs:
             ${{ runner.os }}-${{ matrix.os }}-xcode_${{ matrix.xcode }}-swiftpm-
 
       - name: SwiftPM tests
-        run: swift test --enable-code-coverage | mint run xcbeautify --renderer github-actions
+        run: |
+          set -o pipefail
+          swift test --enable-code-coverage | mint run xcbeautify --renderer github-actions
 
       - name: Convert coverage for Codecov
         id: convert-coverage
@@ -126,7 +128,9 @@ jobs:
 
       - run: swift package resolve swift-syntax --version ${{ matrix.version }}
 
-      - run: swift test | mint run xcbeautify --renderer github-actions
+      - run: |
+          set -o pipefail
+          swift test | mint run xcbeautify --renderer github-actions
 
   generate_xcode_tests_matrix:
     name: Generate Xcode Tests Matrix
