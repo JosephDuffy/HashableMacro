@@ -19,6 +19,7 @@ let package = Package(
     ),
   ],
   dependencies: [
+    // Tests (specifically swift-snapshot-testing) do not support 601.0.0 but the project does build.
     .package(url: "https://github.com/swiftlang/swift-syntax", "509.1.0"..<"603.0.0"),
     // We only really need swift-macro-testing 0.3.0 or newer but 0.4.0 is required to compile due
     // to breaking changes in swift-snapshot-testing.

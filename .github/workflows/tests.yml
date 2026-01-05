@@ -128,9 +128,18 @@ jobs:
 
       - run: swift package resolve swift-syntax --version ${{ matrix.version }}
 
-      - run: |
+      - name: Run Tests
+        # swift-macro-testing does not compile with swift-syntax 601.0.0
+        if: ${{ matrix.version != "601.0.0" }}
+        run: |
           set -o pipefail
           swift test | mint run xcbeautify --renderer github-actions
+
+      - name: Compile Tests
+        if: ${{ matrix.version == "601.0.0" }}
+        run: |
+          set -o pipefail
+          swift build | mint run xcbeautify --renderer github-actions
 
   generate_xcode_tests_matrix:
     name: Generate Xcode Tests Matrix
