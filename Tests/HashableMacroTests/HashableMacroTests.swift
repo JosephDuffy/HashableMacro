@@ -1001,6 +1001,27 @@ final class HashableMacroTests: XCTestCase {
 
     func testHashedAttachedToMultiplePropertyDeclaration() throws {
         #if canImport(HashableMacroMacros)
+        #if canImport(SwiftSyntax510)
+        assertMacro(testMacros) {
+            """
+            @Hashable(_disableNSObjectSubclassSupport: true)
+            struct TestStruct {
+                @Hashed
+                var hashedProperty, secondHashedProperty: String
+            }
+            """
+        } diagnostics: {
+            """
+            @Hashable(_disableNSObjectSubclassSupport: true)
+            struct TestStruct {
+                @Hashed
+                ┬──────
+                ╰─ 🛑 peer macro can only be applied to a single variable
+                var hashedProperty, secondHashedProperty: String
+            }
+            """
+        }
+        #else
         assertMacro(testMacros) {
             """
             @Hashable(_disableNSObjectSubclassSupport: true)
@@ -1030,6 +1051,7 @@ final class HashableMacroTests: XCTestCase {
             }
             """
         }
+        #endif
         #else
         throw XCTSkip("Macros are only supported when running tests for the host platform")
         #endif
