@@ -141,6 +141,23 @@ jobs:
           set -o pipefail
           swift build | mint run xcbeautify --renderer github-actions
 
+      - name: Convert coverage for Codecov
+        id: convert-coverage
+        uses: sersoft-gmbh/swift-coverage-action@v4
+        if: ${{ matrix.version != '601.0.0' }}
+        with:
+          ignore-conversion-failures: true
+          fail-on-empty-output: true
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        if: ${{ matrix.version != '601.0.0' }}
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        with:
+          files: ${{ join(fromJSON(steps.convert-coverage.outputs.files), ',') }}
+          fail_ci_if_error: true
+
   generate_xcode_tests_matrix:
     name: Generate Xcode Tests Matrix
     runs-on: ubuntu-latest
