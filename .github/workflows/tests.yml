@@ -133,7 +133,7 @@ jobs:
         if: ${{ matrix.version != '601.0.0' }}
         run: |
           set -o pipefail
-          swift test | mint run xcbeautify --renderer github-actions
+          swift test --enable-code-coverage | mint run xcbeautify --renderer github-actions
 
       - name: Compile Project
         if: ${{ matrix.version == '601.0.0' }}
