@@ -257,8 +257,8 @@ jobs:
       - name: Install Swift
         uses: compnerd/gha-setup-swift@main
         with:
-          branch: ${{ matrix.branch }}
-          tag: ${{ matrix.tag }}
+          swift-version: ${{ matrix.branch }}
+          swift-build: ${{ matrix.tag }}
 
       - name: swift test
         run: swift test
