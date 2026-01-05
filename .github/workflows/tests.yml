@@ -135,7 +135,7 @@ jobs:
           set -o pipefail
           swift test | mint run xcbeautify --renderer github-actions
 
-      - name: Compile Tests
+      - name: Compile Project
         if: ${{ matrix.version == '601.0.0' }}
         run: |
           set -o pipefail
