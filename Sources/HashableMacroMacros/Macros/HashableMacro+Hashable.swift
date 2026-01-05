@@ -55,16 +55,29 @@ extension HashableMacro {
             )
         }
 
+        let hashFunctionType: AttributedTypeSyntax
+
+        #if canImport(SwiftSyntax600)
+        hashFunctionType = AttributedTypeSyntax(
+            specifiers: [
+                .simpleTypeSpecifier(SimpleTypeSpecifierSyntax(specifier: .keyword(.inout)))
+            ],
+            baseType: TypeSyntax(stringLiteral: "Hasher")
+        )
+        #else
+        hashFunctionType = AttributedTypeSyntax(
+            specifier: .keyword(.inout),
+            baseType: TypeSyntax(stringLiteral: "Hasher")
+        )
+        #endif
+
         let hashFunctionSignature = FunctionSignatureSyntax(
             parameterClause: FunctionParameterClauseSyntax(
                 parameters: [
                     FunctionParameterSyntax(
                         firstName: .identifier("into"),
                         secondName: .identifier("hasher"),
-                        type: AttributedTypeSyntax(
-                            specifier: .keyword(.inout),
-                            baseType: TypeSyntax(stringLiteral: "Hasher")
-                        )
+                        type: hashFunctionType
                     ),
                 ]
             )
