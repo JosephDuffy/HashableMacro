@@ -192,6 +192,13 @@ final class HashableMacroTests: XCTestCase {
 
     func testEmbeddedType() throws {
         #if canImport(HashableMacroMacros)
+        #if canImport(SwiftSyntax600)
+        let outputsFullTypeName = true
+        #else
+        // This should always out e.g. `extension Outer.InnerStruct` but the tester does not output
+        // this until Swift Syntax 600.0.0.
+        let outputsFullTypeName = false
+        #endif
         assertMacro(testMacros) {
             """
             enum Outer {
@@ -212,7 +219,6 @@ final class HashableMacroTests: XCTestCase {
             }
             """
         } expansion: {
-            // This should be e.g. `extension Outer.InnerStruct` but the tester does not output this.
             """
             enum Outer {
                 struct InnerStruct {
@@ -227,25 +233,25 @@ final class HashableMacroTests: XCTestCase {
                 }
             }
 
-            extension InnerStruct {
+            extension \(outputsFullTypeName ? "Outer." : "")InnerStruct {
                 func hash(into hasher: inout Hasher) {
                     hasher.combine(self.hashedProperty)
                 }
             }
 
-            extension InnerStruct {
+            extension \(outputsFullTypeName ? "Outer." : "")InnerStruct {
                 static func ==(lhs: Self, rhs: Self) -> Bool {
                     return lhs.hashedProperty == rhs.hashedProperty
                 }
             }
 
-            extension InnerClass {
+            extension \(outputsFullTypeName ? "Outer." : "")InnerClass {
                 final func hash(into hasher: inout Hasher) {
                     hasher.combine(self.hashedProperty)
                 }
             }
 
-            extension InnerClass {
+            extension \(outputsFullTypeName ? "Outer." : "")InnerClass {
                 static func ==(lhs: Outer.InnerClass, rhs: Outer.InnerClass) -> Bool {
                     return lhs.hashedProperty == rhs.hashedProperty
                 }
