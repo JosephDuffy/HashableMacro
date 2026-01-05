@@ -1544,8 +1544,20 @@ final class HashableMacroTests: XCTestCase {
     // MARK: - Edge cases
 
     func testPropertyAfterIfConfig() throws {
+        #if canImport(SwiftSyntax602)
+        let includesCompilerConditionals = true
+        #else
         // The `#if os(macOS)` will be parsed an attribute of the
         // `notHashedProperty` property.
+        let includesCompilerConditionals = false
+        #endif
+        let conditionalNotHashed =
+            """
+            #if os(macOS)
+                @NotHashed
+                #endif
+                
+            """
         #if canImport(HashableMacroMacros)
         assertMacro(testMacros) {
             """
@@ -1553,18 +1565,14 @@ final class HashableMacroTests: XCTestCase {
             struct Test {
                 @Hashed
                 var hashablePropery: String
-
-                #if os(macOS)
-                @NotHashed
-                #endif
-                var notHashedProperty: String
+                \(conditionalNotHashed)var notHashedProperty: String
             }
             """
         } expansion: {
             """
             struct Test {
                 var hashablePropery: String
-                var notHashedProperty: String
+                \(includesCompilerConditionals ? conditionalNotHashed : "")var notHashedProperty: String
             }
 
             extension Test {
