@@ -3,8 +3,7 @@ name: Tests
 on:
   push:
   pull_request:
-    branches:
-      - "**:**" # PRs from forks have a prefix with `owner:`
+  pull_request_target:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -18,10 +17,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: "macos-14"
-            xcode: "15.1" # Swift 5.9. Same as 15.2.
-          - os: "macos-14"
-            xcode: "15.3" # Swift 5.10. Same as 15.4.
           - os: "macos-15"
             xcode: "16.0" # Swift 6.0. Same as 16.1 and 16.2.
           - os: "macos-15"
@@ -42,9 +37,9 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ~/.mint
-          key: ${{ runner.os }}-mint-xcode_${{ matrix.xcode }}-${{ hashFiles('**/Mintfile') }}
+          key: ${{ runner.os }}-${{ matrix.os }}-mint-xcode_${{ matrix.xcode }}-${{ hashFiles('**/Mintfile') }}
           restore-keys: |
-            ${{ runner.os }}-mint-xcode_${{ matrix.xcode }}
+            ${{ runner.os }}-${{ matrix.os }}-mint-xcode_${{ matrix.xcode }}
 
       - run: mint bootstrap
 
@@ -52,14 +47,16 @@ jobs:
         uses: actions/cache@v3
         with:
           path: .build
-          key: ${{ runner.os }}-xcode_${{ matrix.xcode }}-swiftpm-${{ github.ref }}-${{ hashFiles('**/Package.resolved') }}
+          key: ${{ runner.os }}-${{ matrix.os }}-xcode_${{ matrix.xcode }}-swiftpm-${{ github.ref }}-${{ hashFiles('**/Package.resolved') }}
           restore-keys: |
-            ${{ runner.os }}-xcode_${{ matrix.xcode }}-swiftpm-${{ github.ref }}-
-            ${{ runner.os }}-xcode_${{ matrix.xcode }}-swiftpm-main-
-            ${{ runner.os }}-xcode_${{ matrix.xcode }}-swiftpm-
+            ${{ runner.os }}-${{ matrix.os }}-xcode_${{ matrix.xcode }}-swiftpm-${{ github.ref }}-
+            ${{ runner.os }}-${{ matrix.os }}-xcode_${{ matrix.xcode }}-swiftpm-main-
+            ${{ runner.os }}-${{ matrix.os }}-xcode_${{ matrix.xcode }}-swiftpm-
 
       - name: SwiftPM tests
-        run: swift test --enable-code-coverage | mint run xcbeautify --renderer github-actions
+        run: |
+          set -o pipefail
+          swift test --enable-code-coverage | mint run xcbeautify --renderer github-actions
 
       - name: Convert coverage for Codecov
         id: convert-coverage
@@ -69,7 +66,92 @@ jobs:
           fail-on-empty-output: true
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v5
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        with:
+          files: ${{ join(fromJSON(steps.convert-coverage.outputs.files), ',') }}
+          fail_ci_if_error: true
+
+  generate_swift_syntax_version:
+    name: Generate Swift Syntax Versions
+    runs-on: macos-26
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - run: brew install mint
+
+      - name: Cache Mint
+        uses: actions/cache@v3
+        with:
+          path: ~/.mint
+          key: macOS-macos-26-mint-swift-dependency-compatibility-checker
+
+      - name: Set up matrix
+        id: set-matrix
+        run: |
+          matrix="$(mint run --silent josephduffy/swift-dependency-compatibility-checker@main swift-syntax --resolve-only --github-actions-matrix)"
+          echo "${matrix}"
+          echo "matrix=${matrix}" >> "${GITHUB_OUTPUT}"
+
+  test_swift_syntax_versions:
+    name: Swift Syntax ${{ matrix.version }} Tests
+    needs:
+      - generate_swift_syntax_version
+    runs-on: macos-26
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.generate_swift_syntax_version.outputs.matrix) }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode 26.0.1
+        run: sudo xcode-select --switch /Applications/Xcode_26.0.1.app
+
+      - name: Install Mint
+        run: brew install mint
+
+      - name: Cache Mint
+        uses: actions/cache@v3
+        with:
+          path: ~/.mint
+          key: macOS-macos-26-mint-xcode_26.0.1-${{ hashFiles('**/Mintfile') }}
+          restore-keys: |
+            macOS-macos-26-mint-xcode_26.0.1
+
+      - run: mint bootstrap
+
+      - run: swift package resolve
+
+      - run: swift package resolve swift-syntax --version ${{ matrix.version }}
+
+      - name: Run Tests
+        # swift-macro-testing does not compile with swift-syntax 601.0.0
+        if: ${{ matrix.version != '601.0.0' }}
+        run: |
+          set -o pipefail
+          swift test --enable-code-coverage | mint run xcbeautify --renderer github-actions
+
+      - name: Compile Project
+        if: ${{ matrix.version == '601.0.0' }}
+        run: |
+          set -o pipefail
+          swift build | mint run xcbeautify --renderer github-actions
+
+      - name: Convert coverage for Codecov
+        id: convert-coverage
+        uses: sersoft-gmbh/swift-coverage-action@v4
+        if: ${{ matrix.version != '601.0.0' }}
+        with:
+          ignore-conversion-failures: true
+          fail-on-empty-output: true
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        if: ${{ matrix.version != '601.0.0' }}
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         with:
@@ -113,9 +195,9 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ~/.mint
-          key: ${{ runner.os }}-mint-xcode_${{ matrix.xcode }}-${{ hashFiles('**/Mintfile') }}
+          key: ${{ runner.os }}-${{ matrix.os }}-mint-xcode_${{ matrix.xcode }}-${{ hashFiles('**/Mintfile') }}
           restore-keys: |
-            ${{ runner.os }}-mint-xcode_${{ matrix.xcode }}
+            ${{ runner.os }}-${{ matrix.os }}-mint-xcode_${{ matrix.xcode }}
 
       - run: mint bootstrap
 
@@ -123,10 +205,10 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ~/Library/Developer/Xcode/DerivedData
-          key: ${{ runner.os }}-xcode_${{ matrix.xcode }}-derived_data-${{ github.ref }}
+          key: ${{ runner.os }}-${{ matrix.os }}-xcode_${{ matrix.xcode }}-derived_data-${{ github.ref }}
           restore-keys: |
-            ${{ runner.os }}-xcode_${{ matrix.xcode }}-derived_data-main
-            ${{ runner.os }}-xcode_${{ matrix.xcode }}-derived_data-
+            ${{ runner.os }}-${{ matrix.os }}-xcode_${{ matrix.xcode }}-derived_data-main
+            ${{ runner.os }}-${{ matrix.os }}-xcode_${{ matrix.xcode }}-derived_data-
 
       - name: Run Tests
         run: |
@@ -140,7 +222,7 @@ jobs:
           fail-on-empty-output: true
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v5
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         with:
@@ -156,7 +238,7 @@ jobs:
       fail-fast: false
       matrix:
         os: ["ubuntu-latest"]
-        swift: ["5.9.2", "5.10", "6.0", "6.1", "6.2"]
+        swift: ["6.0", "6.1", "6.2"]
 
     steps:
       - uses: actions/checkout@v4
@@ -192,8 +274,8 @@ jobs:
       - name: Install Swift
         uses: compnerd/gha-setup-swift@main
         with:
-          branch: ${{ matrix.branch }}
-          tag: ${{ matrix.tag }}
+          swift-version: ${{ matrix.branch }}
+          swift-build: ${{ matrix.tag }}
 
       - name: swift test
         run: swift test

@@ -192,6 +192,13 @@ final class HashableMacroTests: XCTestCase {
 
     func testEmbeddedType() throws {
         #if canImport(HashableMacroMacros)
+        #if canImport(SwiftSyntax600)
+        let outputsFullTypeName = true
+        #else
+        // This should always out e.g. `extension Outer.InnerStruct` but the tester does not output
+        // this until Swift Syntax 600.0.0.
+        let outputsFullTypeName = false
+        #endif
         assertMacro(testMacros) {
             """
             enum Outer {
@@ -212,7 +219,6 @@ final class HashableMacroTests: XCTestCase {
             }
             """
         } expansion: {
-            // This should be e.g. `extension Outer.InnerStruct` but the tester does not output this.
             """
             enum Outer {
                 struct InnerStruct {
@@ -227,25 +233,25 @@ final class HashableMacroTests: XCTestCase {
                 }
             }
 
-            extension InnerStruct {
+            extension \(outputsFullTypeName ? "Outer." : "")InnerStruct {
                 func hash(into hasher: inout Hasher) {
                     hasher.combine(self.hashedProperty)
                 }
             }
 
-            extension InnerStruct {
+            extension \(outputsFullTypeName ? "Outer." : "")InnerStruct {
                 static func ==(lhs: Self, rhs: Self) -> Bool {
                     return lhs.hashedProperty == rhs.hashedProperty
                 }
             }
 
-            extension InnerClass {
+            extension \(outputsFullTypeName ? "Outer." : "")InnerClass {
                 final func hash(into hasher: inout Hasher) {
                     hasher.combine(self.hashedProperty)
                 }
             }
 
-            extension InnerClass {
+            extension \(outputsFullTypeName ? "Outer." : "")InnerClass {
                 static func ==(lhs: Outer.InnerClass, rhs: Outer.InnerClass) -> Bool {
                     return lhs.hashedProperty == rhs.hashedProperty
                 }
@@ -1001,6 +1007,27 @@ final class HashableMacroTests: XCTestCase {
 
     func testHashedAttachedToMultiplePropertyDeclaration() throws {
         #if canImport(HashableMacroMacros)
+        #if canImport(SwiftSyntax510)
+        assertMacro(testMacros) {
+            """
+            @Hashable(_disableNSObjectSubclassSupport: true)
+            struct TestStruct {
+                @Hashed
+                var hashedProperty, secondHashedProperty: String
+            }
+            """
+        } diagnostics: {
+            """
+            @Hashable(_disableNSObjectSubclassSupport: true)
+            struct TestStruct {
+                @Hashed
+                ┬──────
+                ╰─ 🛑 peer macro can only be applied to a single variable
+                var hashedProperty, secondHashedProperty: String
+            }
+            """
+        }
+        #else
         assertMacro(testMacros) {
             """
             @Hashable(_disableNSObjectSubclassSupport: true)
@@ -1030,6 +1057,7 @@ final class HashableMacroTests: XCTestCase {
             }
             """
         }
+        #endif
         #else
         throw XCTSkip("Macros are only supported when running tests for the host platform")
         #endif
@@ -1516,8 +1544,20 @@ final class HashableMacroTests: XCTestCase {
     // MARK: - Edge cases
 
     func testPropertyAfterIfConfig() throws {
+        #if canImport(SwiftSyntax602)
+        let includesCompilerConditionals = true
+        #else
         // The `#if os(macOS)` will be parsed an attribute of the
         // `notHashedProperty` property.
+        let includesCompilerConditionals = false
+        #endif
+        let conditionalNotHashed =
+            """
+            #if os(macOS)
+                @NotHashed
+                #endif
+                
+            """
         #if canImport(HashableMacroMacros)
         assertMacro(testMacros) {
             """
@@ -1525,18 +1565,14 @@ final class HashableMacroTests: XCTestCase {
             struct Test {
                 @Hashed
                 var hashablePropery: String
-
-                #if os(macOS)
-                @NotHashed
-                #endif
-                var notHashedProperty: String
+                \(conditionalNotHashed)var notHashedProperty: String
             }
             """
         } expansion: {
             """
             struct Test {
                 var hashablePropery: String
-                var notHashedProperty: String
+                \(includesCompilerConditionals ? conditionalNotHashed : "")var notHashedProperty: String
             }
 
             extension Test {
