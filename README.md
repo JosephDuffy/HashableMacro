@@ -3,9 +3,6 @@
 [![Tests](https://github.com/JosephDuffy/HashableMacro/actions/workflows/tests.yml/badge.svg)](https://github.com/JosephDuffy/HashableMacro/actions/workflows/tests.yml)
 [![Platforms](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2FJosephDuffy%2FHashableMacro%2Fbadge%3Ftype%3Dplatforms)](https://swiftpackageindex.com/JosephDuffy/HashableMacro)
 
-> [!WARNING]
-> This package requires Swift 5.9.2, which ships with Xcode 15.1. This package will fail to compile with Swift 5.9.0 (Xcode 15.0 and 15.0.1).
-
 `@Hashable` is a Swift macro for adding `Hashable` conformance. It is particularly useful when synthesised conformance is not possible, such as with classes or a struct with 1 or more non-hashable properties.
 
 The `@Hashable` macro is applied to the type that will conform to `Hashable` and the `Hashed` macro is applied to each of the properties that should contribute to the `Hashable` conformance.
